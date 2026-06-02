@@ -231,14 +231,29 @@ nav{display:flex;gap:2px;flex:1}
       <button class="btn btn-s" onclick="adminLogin()">Sisene</button>
     </div>
     <div id="admin-status" style="font-size:12px;text-align:center;margin-top:4px;min-height:16px"></div>
-    <div class="divider">impordi ennustused</div>
-    <div class="row">
-      <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
-        📥 Impordi .json fail
-        <input type="file" accept=".json" style="display:none" onchange="importPreds(event)">
-      </label>
+    <div id="admin-section" style="display:none">
+      <div class="divider">impordi ennustused</div>
+      <div class="row">
+        <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
+          📥 Impordi .json fail
+          <input type="file" accept=".json" style="display:none" onchange="importPreds(event)">
+        </label>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn btn-s" style="flex:1" onclick="exportScores()">📤 Ekspordi skoorid</button>
+      </div>
+      <div id="import-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px"></div>
     </div>
-    <div id="import-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px"></div>
+    <div id="scores-section" style="display:none">
+      <div class="divider">skoorid</div>
+      <div class="row">
+        <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
+          📊 Impordi skoorid
+          <input type="file" accept=".json" style="display:none" onchange="importScores(event)">
+        </label>
+      </div>
+      <div id="scores-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -457,6 +472,7 @@ function updateProgress(){
 
 // ═══════ LOGIN ═══════
 function renderLogin(){
+  updateAdminSections();
   const s=getAll(),now=new Date(),diff=TOURNAMENT_START-now;
   const cdown=document.getElementById('cdown');
   if(diff>0){const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000);
@@ -972,10 +988,16 @@ function adminLogin(){
     sessionStorage.setItem('wc_admin','1');
     status.textContent='✓ Admin sisse logitud';status.style.color='var(--green3)';
     document.getElementById('admin-pass').value='';
+    updateAdminSections();
     renderLogin();
   }else{
     status.textContent='❌ Vale parool';status.style.color='var(--red)';
   }
+}
+function updateAdminSections(){
+  const admin=isAdmin();
+  document.getElementById('admin-section').style.display=admin?'block':'none';
+  document.getElementById('scores-section').style.display=admin?'none':'block';
 }
 function deletePlayer(name){
   if(!isAdmin())return;
@@ -1019,7 +1041,40 @@ function importPreds(event){
   event.target.value='';
 }
 
+function exportScores(){
+  const s=getAll();
+  const data={type:'wc2026_scores',players:s.players,preds:s.preds,actual:s.actual,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`mm2026_skoorid_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+function importScores(event){
+  const file=event.target.files[0];if(!file)return;
+  const status=document.getElementById('scores-status');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.type!=='wc2026_scores'){status.textContent='❌ Vigane fail';status.style.color='var(--red)';return;}
+      const s=getAll();
+      // merge players (keep own preds, add others)
+      data.players.forEach(n=>{if(!s.players.includes(n))s.players.push(n);});
+      Object.entries(data.preds||{}).forEach(([n,p])=>{if(n!==me)s.preds[n]=p;});
+      // merge actual results
+      if(data.actual)s.actual=data.actual;
+      saveAll(s);
+      status.textContent=`✓ Skoorid uuendatud — ${data.players.length} mängijat`;status.style.color='var(--green3)';
+      renderLogin();
+    }catch{status.textContent='❌ Faili lugemine ebaõnnestus';status.style.color='var(--red)';}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
 // ═══════ INIT ═══════
+updateAdminSections();
 renderLogin();
 </script>
 </body>
