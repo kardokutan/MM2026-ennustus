@@ -713,7 +713,86 @@ function renderScore(){
       </div>
     </div>`;
   }).join('');
-  document.getElementById('score-content').innerHTML=`${noActNote}<h2 style="margin-bottom:14px;font-size:17px">🏆 Edetabel</h2><div class="lb-grid">${cards}</div>`;
+  document.getElementById('score-content').innerHTML=`${noActNote}<h2 style="margin-bottom:14px;font-size:17px">🏆 Edetabel</h2><div class="lb-grid">${cards}</div>${renderScoreChart(ranked)}${renderPredsSummary(s)}`;
+}
+
+// ═══════ SCORE CHART ═══════
+function renderScoreChart(ranked){
+  if(!ranked.length||ranked.every(r=>r.sc.total===0))return'';
+  const maxPts=Math.max(...ranked.map(r=>r.sc.total),1);
+  const bars=ranked.map(({name,sc},i)=>{
+    const hue=nameHue(name);
+    const pct=Math.round(sc.total/maxPts*100);
+    const isMe=name===me;
+    return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <div style="width:110px;text-align:right;font-size:12px;font-weight:${isMe?700:400};color:${isMe?'var(--green3)':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0">${name}</div>
+      <div style="flex:1;background:var(--bg3);border-radius:4px;height:22px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:hsl(${hue},50%,38%);border-radius:4px;display:flex;align-items:center;padding:0 6px;transition:width .4s;min-width:2px">
+          ${pct>15?`<span style="font-size:11px;font-weight:700;color:#fff">${sc.total}p</span>`:''}
+        </div>
+      </div>
+      ${pct<=15?`<span style="font-size:11px;font-weight:700;color:var(--text2);min-width:28px">${sc.total}p</span>`:'<div style="min-width:28px"></div>'}
+    </div>`;
+  }).join('');
+  return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:20px">
+    <h3 style="font-size:15px;margin-bottom:14px">📊 Punktide graafik</h3>
+    ${bars}
+    <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+      ${[['Grupp','var(--text2)'],['1/16–1/8','var(--blue)'],['VF–PF','var(--yellow)'],['Finaal','var(--gold)']].map(([l,c])=>`<span style="font-size:11px;color:${c}">■ ${l}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════ PREDICTIONS SUMMARY ═══════
+function renderPredsSummary(s){
+  if(!s.players.length)return'';
+  // Champion picks
+  const champCount={};
+  s.players.forEach(n=>{const c=(s.preds[n]||freshPreds()).ko?.final;if(c){champCount[c]=(champCount[c]||0)+1;}});
+  const champEntries=Object.entries(champCount).sort((a,b)=>b[1]-a[1]);
+  const champHtml=champEntries.length?champEntries.map(([t,cnt])=>{
+    const pct=Math.round(cnt/s.players.length*100);
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div style="width:130px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${flag(t)} ${t}</div>
+      <div style="flex:1;background:var(--bg3);border-radius:4px;height:18px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:var(--goldbg);border:1px solid var(--gold);border-radius:4px"></div>
+      </div>
+      <div style="font-size:11px;color:var(--gold);min-width:40px;text-align:right">${cnt}/${s.players.length}</div>
+    </div>`;
+  }).join(''):`<p style="color:var(--text2);font-size:12px">Keegi pole veel finalistit ennustanud.</p>`;
+
+  // Group match consensus
+  const act=getActual();
+  let consensusRows='';
+  Object.entries(GROUPS).forEach(([letter,teams])=>{
+    GM.forEach(([hi,ai],mi)=>{
+      const key=`${letter}_${mi}`;
+      const ar=act.results&&act.results[key];
+      if(!ar)return;
+      const counts={W:0,T:0,L:0,none:0};
+      s.players.forEach(n=>{const r=(s.preds[n]||freshPreds()).results?.[key];counts[r||'none']++;});
+      const total=s.players.length,w=counts.W,t=counts.T,l=counts.L;
+      if(!w&&!t&&!l)return;
+      const seg=(val,color,label)=>val?`<div style="flex:${val};background:${color};height:100%;display:flex;align-items:center;justify-content:center"><span style="font-size:10px;font-weight:700;color:#fff">${val>0&&(val/total)>0.12?label:''}</span></div>`:'';
+      consensusRows+=`<div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+          <span style="font-size:11px">${flag(teams[hi])} ${teams[hi]} vs ${flag(teams[ai])} ${teams[ai]}</span>
+          <span style="font-size:10px;color:${ar?'var(--green3)':'var(--text2)'}">${ar?'Tulemus: '+ar:''}</span>
+        </div>
+        <div style="display:flex;height:18px;border-radius:4px;overflow:hidden;gap:1px">
+          ${seg(w,'var(--green)','W')}${seg(t,'#7a6a00','T')}${seg(l,'var(--red)','L')}${seg(counts.none,'var(--bg3)','')}
+        </div>
+      </div>`;
+    });
+  });
+
+  return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px">
+    <h3 style="font-size:15px;margin-bottom:14px">🔮 Ennustuste kokkuvõte</h3>
+    <h4 style="font-size:12px;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🏆 Maailmameistri ennustused</h4>
+    ${champHtml}
+    ${consensusRows?`<h4 style="font-size:12px;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.5px">⚽ Grupiturniiri konsensus</h4>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:8px">Roheline=W · Kollane=T · Punane=L (ainult peetud mängud)</p>
+    ${consensusRows}`:''}</div>`;
 }
 
 // ═══════ RESULTS TAB ═══════
