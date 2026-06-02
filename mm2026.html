@@ -225,6 +225,12 @@ nav{display:flex;gap:2px;flex:1}
       <input id="new-name" class="text" type="text" placeholder="Sinu nimi..." maxlength="30" autocomplete="off">
       <button class="btn btn-g" onclick="addPlayer()">Alusta</button>
     </div>
+    <div class="divider">admin</div>
+    <div class="row" id="admin-row">
+      <input id="admin-pass" class="text" type="password" placeholder="Admini parool..." autocomplete="off">
+      <button class="btn btn-s" onclick="adminLogin()">Sisene</button>
+    </div>
+    <div id="admin-status" style="font-size:12px;text-align:center;margin-top:4px;min-height:16px"></div>
     <div class="divider">impordi ennustused</div>
     <div class="row">
       <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
@@ -466,6 +472,7 @@ function renderLogin(){
       <div class="avatar" style="background:hsl(${hue},45%,32%)">${n[0].toUpperCase()}</div>
       <div class="p-name">${n}</div>
       <div class="${done?'p-done':'p-prog'}">${done?'✓ Valmis':pct+'%'}${scoreStr}${champ?' · 🏆 '+champ:''}</div>
+      ${isAdmin()?`<button onclick="event.stopPropagation();deletePlayer('${esc(n)}')" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px;line-height:1" title="Kustuta mängija">×</button>`:''}
     </div>`;
   }).join('');
 }
@@ -954,6 +961,31 @@ function viewPlayer(name){
   document.getElementById('modal-bg').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+
+// ═══════ ADMIN ═══════
+const ADMIN_PASS='kardu';
+function isAdmin(){return sessionStorage.getItem('wc_admin')==='1';}
+function adminLogin(){
+  const val=document.getElementById('admin-pass').value;
+  const status=document.getElementById('admin-status');
+  if(val===ADMIN_PASS){
+    sessionStorage.setItem('wc_admin','1');
+    status.textContent='✓ Admin sisse logitud';status.style.color='var(--green3)';
+    document.getElementById('admin-pass').value='';
+    renderLogin();
+  }else{
+    status.textContent='❌ Vale parool';status.style.color='var(--red)';
+  }
+}
+function deletePlayer(name){
+  if(!isAdmin())return;
+  if(!confirm(`Kustuta mängija "${name}"? See eemaldab kõik tema ennustused.`))return;
+  const s=getAll();
+  s.players=s.players.filter(p=>p!==name);
+  delete s.preds[name];
+  saveAll(s);
+  renderLogin();
+}
 
 // ═══════ EXPORT / IMPORT ═══════
 function exportPreds(){
