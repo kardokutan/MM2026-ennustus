@@ -225,6 +225,14 @@ nav{display:flex;gap:2px;flex:1}
       <input id="new-name" class="text" type="text" placeholder="Sinu nimi..." maxlength="30" autocomplete="off">
       <button class="btn btn-g" onclick="addPlayer()">Alusta</button>
     </div>
+    <div class="divider">impordi ennustused</div>
+    <div class="row">
+      <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
+        📥 Impordi .json fail
+        <input type="file" accept=".json" style="display:none" onchange="importPreds(event)">
+      </label>
+    </div>
+    <div id="import-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px"></div>
   </div>
 </div>
 
@@ -241,6 +249,7 @@ nav{display:flex;gap:2px;flex:1}
     <div class="header-r">
       <span class="chip" id="hchip"></span>
       <span class="lock-badge" id="hlock">🔒 Lukus</span>
+      <button class="btn btn-s btn-sm" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
       <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
     </div>
   </header>
@@ -945,6 +954,38 @@ function viewPlayer(name){
   document.getElementById('modal-bg').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+
+// ═══════ EXPORT / IMPORT ═══════
+function exportPreds(){
+  const s=getAll(),p=s.preds[me];
+  if(!p){alert('Pole ennustusi eksportida.');return;}
+  const data={name:me,preds:p,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`mm2026_${me.replace(/\s+/g,'_')}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+function importPreds(event){
+  const file=event.target.files[0];if(!file)return;
+  const status=document.getElementById('import-status');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.name||!data.preds){status.textContent='❌ Vigane fail';status.style.color='var(--red)';return;}
+      const s=getAll();
+      if(!s.players.includes(data.name))s.players.push(data.name);
+      s.preds[data.name]=data.preds;
+      saveAll(s);
+      status.textContent=`✓ Imporditud: ${data.name}`;status.style.color='var(--green3)';
+      renderLogin();
+    }catch{status.textContent='❌ Faili lugemine ebaõnnestus';status.style.color='var(--red)';}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
 
 // ═══════ INIT ═══════
 renderLogin();
