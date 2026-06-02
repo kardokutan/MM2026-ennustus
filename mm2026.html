@@ -232,8 +232,12 @@ nav{display:flex;gap:2px;flex:1}
     </div>
     <div id="admin-status" style="font-size:12px;text-align:center;margin-top:4px;min-height:16px"></div>
     <div id="admin-section" style="display:none">
-      <div class="divider">impordi ennustused</div>
+      <div class="divider">admin tööriistad</div>
       <div class="row">
+        <button class="btn btn-blue" style="flex:1" id="login-fetch-btn" onclick="adminFetchResults()">⬇ Laadi tulemused</button>
+      </div>
+      <div style="font-size:12px;text-align:center;margin-top:4px;min-height:16px" id="login-fetch-status"></div>
+      <div class="row" style="margin-top:6px">
         <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
           📥 Impordi .json fail
           <input type="file" accept=".json" style="display:none" onchange="importPreds(event)">
@@ -281,12 +285,8 @@ nav{display:flex;gap:2px;flex:1}
   </div>
 
   <div id="tab-groups" class="tab active">
-    <div style="display:flex;align-items:center;gap:10px;padding:0 0 12px 0;flex-wrap:wrap">
+    <div style="padding:0 0 12px 0">
       <span style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">W</strong> = kodu võidab &nbsp; <strong style="color:var(--text)">T</strong> = viik &nbsp; <strong style="color:var(--text)">L</strong> = kodu kaotab</span>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-        <button class="btn btn-blue btn-sm" id="grp-fetch-btn" onclick="autoFetchResultsGroups()">⬇ Laadi tulemused</button>
-        <span class="fetch-status info" id="grp-fetch-status" style="font-size:12px"></span>
-      </div>
     </div>
     <div class="groups-grid" id="groups-grid"></div>
   </div>
@@ -401,7 +401,7 @@ function getAll(){
 function saveAll(s){localStorage.setItem('wc2026',JSON.stringify(s));}
 function myPreds(){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();return s.preds[me];}
 function freshPreds(){return{results:{},thirds:[],ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
-function freshActual(){return{results:{},ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
+function freshActual(){return{results:{},scores:{},ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
 function getActual(){const s=getAll();if(!s.actual)s.actual=freshActual();return s.actual;}
 function updateMe(fn){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();fn(s.preds[me]);saveAll(s);}
 function updateActual(fn){const s=getAll();if(!s.actual)s.actual=freshActual();fn(s.actual);saveAll(s);}
@@ -551,6 +551,7 @@ function groupCard(letter,teams,p,readOnly,act){
         <button class="wb ${selL?'sel-l':''}" ${oc('L')} ${dis} title="Külaline võidab">L</button>
       </div>
       <span class="mteam away ${selL?'bold':''}">${teams[ai]} ${flag(teams[ai])}</span>
+      ${!readOnly?`<button onclick="showMatchPredictions('${letter}',${mi},'${esc(teams[hi])}','${esc(teams[ai])}')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;font-size:10px;padding:2px 5px;flex-shrink:0" title="Vaata ennustusi">👥</button>`:''}
     </div>`;
   }).join('');
   const st=calcStandings(letter,p);
@@ -717,43 +718,39 @@ function renderScore(){
 
 // ═══════ RESULTS TAB ═══════
 function renderResults(){
-  const act=getActual();
-  const fetchBar=`<div class="fetch-bar">
-    <div>
-      <div style="font-weight:600;font-size:13px;margin-bottom:4px">🔄 Automaatne tulemuste laadimine</div>
-      <p>Laeb lõppenud mängude tulemused ESPN spordist. Töötab interneti kaudu.</p>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
-      <button class="btn btn-blue" id="auto-fetch-btn" onclick="autoFetchResults()">⬇ Laadi tulemused</button>
-      <span class="fetch-status info" id="fetch-status"></span>
-    </div>
-  </div>`;
+  const act=getActual(),admin=isAdmin();
+  const adminBar='';
   const groupsHtml=`<div class="results-section">
     <h3>Grupiturniir <span class="rtag">+1 punkt iga õige W/T/L eest</span></h3>
     <p style="color:var(--text2);font-size:12px;margin-bottom:12px"><strong>W</strong> = kodumeeskond võidab &nbsp; <strong>T</strong> = viik &nbsp; <strong>L</strong> = külaline võidab</p>
-    <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act)).join('')}</div>
+    <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act,admin)).join('')}</div>
   </div>`;
+  const viewNote=!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:'';
   document.getElementById('results-content').innerHTML=`
-    <div style="background:var(--redbg);border:1px solid var(--red);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:#f85149">
-      ⚽ <strong>Tegelikud tulemused</strong> — ühine lehekülg, mida kõik näevad. Üks inimene sisestab pärast iga mängu.
-    </div>
-    ${fetchBar}
+    ${viewNote}
+    ${adminBar}
     ${groupsHtml}
-    ${renderActualKo(act)}`;
+    ${renderActualStandings(act)}
+    ${renderActualKo(act,admin)}`;
 }
-function actualGroupCard(letter,teams,act){
+function actualGroupCard(letter,teams,act,admin){
+  const scoreInp=(key,side,val)=>admin
+    ?`<input type="number" min="0" max="99" value="${val??''}" placeholder="-"
+        onchange="setActualScore('${letter}',${parseInt(key.split('_')[1])},'${side}',this.value)"
+        style="width:32px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:700;text-align:center;padding:2px 0;outline:none">`
+    :`<span style="width:32px;display:inline-block;text-align:center;font-size:13px;font-weight:700;color:var(--text)">${val??'–'}</span>`;
   const matches=GM.map(([hi,ai],mi)=>{
     const key=`${letter}_${mi}`,r=act.results&&act.results[key];
+    const sc=act.scores&&act.scores[key];
     const selW=r==='W',selT=r==='T',selL=r==='L';
-    const oc=(v)=>`onclick="setActualResult('${letter}',${mi},'${v}')"`;
-    return`<div class="mrow">
-      <span class="mteam home ${selW?'bold':''}">${flag(teams[hi])} ${teams[hi]}</span>
-      <div class="wdl">
-        <button class="wb ${selW?'sel-w':''}" ${oc('W')} title="Kodumeeskond võidab">W</button>
-        <button class="wb ${selT?'sel-t':''}" ${oc('T')} title="Viik">T</button>
-        <button class="wb ${selL?'sel-l':''}" ${oc('L')} title="Külaline võidab">L</button>
+    return`<div class="mrow" style="gap:4px">
+      <span class="mteam home ${selW?'bold':''}" style="font-size:11px">${flag(teams[hi])} ${teams[hi]}</span>
+      <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        ${scoreInp(key,'h',sc?.h)}
+        <span style="color:var(--text2);font-size:11px">:</span>
+        ${scoreInp(key,'a',sc?.a)}
       </div>
-      <span class="mteam away ${selL?'bold':''}">${teams[ai]} ${flag(teams[ai])}</span>
+      <span class="mteam away ${selL?'bold':''}" style="font-size:11px">${teams[ai]} ${flag(teams[ai])}</span>
     </div>`;
   }).join('');
   const done=GM.every((_,mi)=>act.results&&act.results[`${letter}_${mi}`]);
@@ -762,18 +759,87 @@ function actualGroupCard(letter,teams,act){
     <div class="g-check">${done?'✓':''}</div></div>
     <div class="gmatches">${matches}</div></div>`;
 }
+function setActualScore(letter,mi,side,val){
+  const key=`${letter}_${mi}`;
+  updateActual(a=>{
+    if(!a.scores)a.scores={};
+    if(!a.scores[key])a.scores[key]={h:null,a:null};
+    a.scores[key][side]=val===''?null:parseInt(val);
+    const sc=a.scores[key];
+    if(sc.h!==null&&sc.a!==null){
+      if(!a.results)a.results={};
+      a.results[key]=toWTL(sc.h,sc.a);
+    }
+  });
+  renderResults();renderGroups();
+}
 function setActualResult(letter,mi,val){
   updateActual(a=>{if(!a.results)a.results={};const k=`${letter}_${mi}`;a.results[k]=a.results[k]===val?null:val;});
   renderResults();renderGroups();
 }
-function renderActualKo(act){
+function calcStandingsFull(letter,act){
+  const teams=GROUPS[letter],st=teams.map(t=>({name:t,mp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
+  GM.forEach(([hi,ai],mi)=>{
+    const key=`${letter}_${mi}`,r=act.results&&act.results[key],sc=act.scores&&act.scores[key];
+    if(!r)return;
+    st[hi].mp++;st[ai].mp++;
+    const hg=sc?.h??0,ag=sc?.a??0;
+    st[hi].gf+=hg;st[hi].ga+=ag;st[ai].gf+=ag;st[ai].ga+=hg;
+    if(r==='W'){st[hi].pts+=3;st[hi].w++;st[ai].l++;}
+    else if(r==='T'){st[hi].pts++;st[ai].pts++;st[hi].d++;st[ai].d++;}
+    else{st[ai].pts+=3;st[ai].w++;st[hi].l++;}
+  });
+  return[...st].sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||a.name.localeCompare(b.name));
+}
+function renderActualStandings(act){
+  const hasAny=Object.values(act.results||{}).some(Boolean);
+  if(!hasAny)return'';
+  const thStyle='padding:5px 8px;text-align:center;font-size:10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border)';
+  const tables=Object.keys(GROUPS).map(letter=>{
+    const st=calcStandingsFull(letter,act);
+    const rows=st.map((t,i)=>{
+      const gd=t.gf-t.ga;
+      const bg=i===0?'var(--green4)':i===1?'rgba(56,139,253,.08)':'transparent';
+      const c1=i===0?'var(--green3)':i===1?'var(--blue)':'var(--text)';
+      return`<tr style="background:${bg};border-top:1px solid var(--border)">
+        <td style="padding:5px 8px;font-weight:600;color:${c1}">${i+1}</td>
+        <td style="padding:5px 8px;white-space:nowrap">${flag(t.name)} ${t.name}</td>
+        <td style="padding:5px 8px;text-align:center">${t.mp}</td>
+        <td style="padding:5px 8px;text-align:center">${t.w}</td>
+        <td style="padding:5px 8px;text-align:center">${t.d}</td>
+        <td style="padding:5px 8px;text-align:center">${t.l}</td>
+        <td style="padding:5px 8px;text-align:center">${t.gf}</td>
+        <td style="padding:5px 8px;text-align:center">${t.ga}</td>
+        <td style="padding:5px 8px;text-align:center;color:${gd>0?'var(--green3)':gd<0?'#f85149':'var(--text2)'}">${gd>0?'+':''}${gd}</td>
+        <td style="padding:5px 8px;text-align:center;font-weight:700;color:var(--gold)">${t.pts}</td>
+      </tr>`;
+    }).join('');
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="background:var(--bg3);padding:7px 10px;font-size:12px;font-weight:700;color:var(--gold);border-bottom:1px solid var(--border)">Group ${letter}</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="${thStyle}">#</th><th style="${thStyle};text-align:left">Team</th>
+          <th style="${thStyle}">MP</th><th style="${thStyle}">W</th><th style="${thStyle}">D</th><th style="${thStyle}">L</th>
+          <th style="${thStyle}">GF</th><th style="${thStyle}">GA</th><th style="${thStyle}">GD</th><th style="${thStyle}">Pts</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+  return`<div class="results-section">
+    <h3>Group Standings</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px">${tables}</div>
+  </div>`;
+}
+function renderActualKo(act,admin){
   const rounds=['r32','r16','qf','sf'];
+  const dis=admin?'':'disabled';
   const koHtml=rounds.map(rnd=>{
     const n={r32:16,r16:8,qf:4,sf:2}[rnd];
     const matches=Array.from({length:n},(_,mi)=>{
       const cur=(act.ko[rnd]&&act.ko[rnd][mi])||'';
       return`<div class="actual-match"><label>${RND_NAMES[rnd]} #${mi+1} võitja</label>
-        <select onchange="setActualKo('${rnd}',${mi},this.value)">
+        <select onchange="setActualKo('${rnd}',${mi},this.value)" ${dis}>
           <option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${cur===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
         </select></div>`;
@@ -785,11 +851,11 @@ function renderActualKo(act){
   const finalHtml=`<div class="results-section"><h3>Finaal + 3. koha mäng <span class="rtag">+20p finaali eest</span></h3>
     <div class="actual-ko-grid">
       <div class="actual-match"><label>🏆 Finaali võitja (maailmameister)</label>
-        <select onchange="setActualKoFinal(this.value)"><option value="">– vali –</option>
+        <select onchange="setActualKoFinal(this.value)" ${dis}><option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${f===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
         </select></div>
       <div class="actual-match"><label>🥉 3. koha mängu võitja</label>
-        <select onchange="setActualKoTp(this.value)"><option value="">– vali –</option>
+        <select onchange="setActualKoTp(this.value)" ${dis}><option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${tp3===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
         </select></div>
     </div></div>`;
@@ -940,8 +1006,9 @@ function processEvents(events,lk){
     const hN=espnName(home.team?.displayName||''),aN=espnName(away.team?.displayName||'');
     const hS=parseInt(home.score),aS=parseInt(away.score);if(isNaN(hS)||isNaN(aS))return;
     const m=lk[`${hN}|${aN}`];if(!m)return;
-    let res;if(!m.swap){res=toWTL(hS,aS);}else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';}
-    updateActual(a=>{if(!a.results)a.results={};a.results[`${m.letter}_${m.mi}`]=res;});n++;
+    let res,hs,as_;
+    if(!m.swap){res=toWTL(hS,aS);hs=hS;as_=aS;}else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';hs=aS;as_=hS;}
+    updateActual(a=>{if(!a.results)a.results={};if(!a.scores)a.scores={};const k=`${m.letter}_${m.mi}`;a.results[k]=res;a.scores[k]={h:hs,a:as_};});n++;
   });
   return n;
 }
@@ -977,6 +1044,30 @@ function viewPlayer(name){
   document.getElementById('modal-bg').classList.add('open');
 }
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+
+// ═══════ MATCH PREDICTIONS VIEW ═══════
+function showMatchPredictions(letter,mi,home,away){
+  const s=getAll(),act=getActual();
+  const ar=act.results&&act.results[`${letter}_${mi}`];
+  const lbls={W:`🏠 ${home} võidab`,T:'🤝 Viik',L:`✈️ ${away} võidab`};
+  const rows=s.players.map(name=>{
+    const p=s.preds[name]||freshPreds();
+    const r=p.results&&p.results[`${letter}_${mi}`];
+    if(!r)return`<tr><td style="padding:6px 10px">${name}</td><td style="padding:6px 10px;color:var(--text2);font-style:italic">Ennustamata</td><td></td></tr>`;
+    const correct=ar&&r===ar,wrong=ar&&r&&r!==ar;
+    const color=correct?'var(--green3)':wrong?'#f85149':'var(--text)';
+    const badge=correct?'✓':wrong?'✗':'';
+    return`<tr style="border-top:1px solid var(--border)">
+      <td style="padding:6px 10px;font-weight:500">${name}${name===me?' <span style="font-size:10px;color:var(--green3)">(mina)</span>':''}</td>
+      <td style="padding:6px 10px;color:${color}">${lbls[r]||r}</td>
+      <td style="padding:6px 10px;color:${color};font-weight:700">${badge}</td>
+    </tr>`;
+  }).join('');
+  const actRow=ar?`<div style="background:var(--green4);border:1px solid var(--green);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px">✅ Tegelik tulemus: <strong style="color:var(--green3)">${lbls[ar]||ar}</strong></div>`:'';
+  document.getElementById('modal-title').textContent=`${flag(home)} ${home} vs ${flag(away)} ${away}`;
+  document.getElementById('modal-body').innerHTML=`${actRow}<table style="width:100%;border-collapse:collapse"><thead><tr style="font-size:11px;color:var(--text2)"><th style="padding:4px 10px;text-align:left">Mängija</th><th style="padding:4px 10px;text-align:left">Ennustus</th><th style="padding:4px 10px"></th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
 
 // ═══════ ADMIN ═══════
 const ADMIN_PASS='kardu';
@@ -1039,6 +1130,32 @@ function importPreds(event){
   };
   reader.readAsText(file);
   event.target.value='';
+}
+
+async function adminFetchResults(){
+  const btn=document.getElementById('login-fetch-btn');
+  const status=document.getElementById('login-fetch-status');
+  btn.disabled=true;btn.textContent='⏳ Laen...';
+  status.textContent='Ühendan ESPN-iga...';status.style.color='var(--text2)';
+  const lk=buildMatchLookup();let updated=0;
+  const PROXIES=[url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,url=>`https://corsproxy.io/?${encodeURIComponent(url)}`];
+  const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  for(const proxy of PROXIES){
+    try{
+      const res=await fetch(proxy(`${espnBase}?dates=20260611-20260719&limit=200`),{signal:AbortSignal.timeout(8000)});
+      if(!res.ok)continue;
+      const json=await res.json();const raw=json.contents||json;
+      const data=typeof raw==='string'?JSON.parse(raw):raw;
+      const events=data.events||[];
+      if(events.length){updated=processEvents(events,lk);break;}
+      const days=Array.from({length:40},(_,i)=>{const d=new Date('2026-06-11');d.setDate(d.getDate()+i);return`${espnBase}?dates=${d.toISOString().slice(0,10).replace(/-/g,'')}`});
+      for(const dayUrl of days){try{const r2=await fetch(proxy(dayUrl),{signal:AbortSignal.timeout(5000)});if(!r2.ok)continue;const j2=await r2.json();const raw2=j2.contents||j2;const d2=typeof raw2==='string'?JSON.parse(raw2):raw2;updated+=processEvents(d2.events||[],lk);}catch{}}
+      break;
+    }catch{continue;}
+  }
+  if(updated>0){status.textContent=`✓ ${updated} mängu uuendatud`;status.style.color='var(--green3)';}
+  else{status.textContent='Lõppenud mänge ei leitud';status.style.color='var(--text2)';}
+  btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
 }
 
 function exportScores(){
