@@ -792,8 +792,8 @@ function calcStandingsFull(letter,act){
   return[...st].sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||a.name.localeCompare(b.name));
 }
 function renderActualStandings(act){
-  const hasAny=Object.values(act.results||{}).some(Boolean);
-  if(!hasAny)return'';
+  const hasScores=Object.values(act.scores||{}).some(s=>s&&(s.h!==null||s.a!==null));
+  if(!hasScores)return'';
   const thStyle='padding:5px 8px;text-align:center;font-size:10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border)';
   const tables=Object.keys(GROUPS).map(letter=>{
     const st=calcStandingsFull(letter,act);
