@@ -455,7 +455,7 @@ function updateProgress(){
   const p=myPreds(),n=countPreds(p),pct=Math.round(n/TOTAL_PREDS*100);
   document.getElementById('prog-fill').style.width=pct+'%';
   document.getElementById('prog-pct').textContent=pct+'%';
-  const gm=12-Object.keys(GROUPS).filter(g=>GM.every((_,mi)=>p.results&&p.results[`${g}_${mi}`])).length;
+  const gm=Object.keys(GROUPS).reduce((acc,g)=>acc+GM.filter((_,mi)=>!p.results||!p.results[`${g}_${mi}`]).length,0);
   const bg=document.getElementById('bdg-g');bg.textContent=gm;bg.style.display=gm>0?'inline':'none';
   const km=[8-Math.min((p.thirds||[]).length,8),16-(p.ko?.r32||[]).filter(Boolean).length,
     8-(p.ko?.r16||[]).filter(Boolean).length,4-(p.ko?.qf||[]).filter(Boolean).length,
