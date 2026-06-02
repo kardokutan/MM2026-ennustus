@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MM 2026 – Ennustus</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1e2631;--border:#30363d;
+  --green:#238636;--green2:#2ea043;--green3:#3fb950;--green4:#0d2818;
+  --gold:#d29922;--goldbg:#1a1500;
+  --text:#c9d1d9;--text2:#8b949e;
+  --red:#da3633;--redbg:#2a0d0d;
+  --blue:#388bfd;--r:8px;
+  --yellow:#e3b341;--yellowbg:#2a1f00;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:36px 32px;max-width:430px;width:100%;text-align:center}
+.login-ball{font-size:52px;margin-bottom:12px}
+.login-box h1{font-size:26px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#8b949e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-box h2{font-size:13px;color:var(--text2);margin-bottom:20px;font-weight:400}
+.cdown-box{border-radius:var(--r);padding:10px 14px;margin-bottom:20px;font-size:13px}
+.cdown-open{background:var(--green4);border:1px solid var(--green);color:var(--green3)}
+.cdown-locked{background:var(--redbg);border:1px solid var(--red);color:#f85149}
+.player-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;text-align:left}
+.player-item{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all .15s}
+.player-item:hover{border-color:var(--green);background:var(--green4)}
+.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.p-name{font-weight:500;flex:1}
+.p-prog{font-size:11px;color:var(--text2)}
+.p-done{font-size:11px;color:var(--green3)}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--text2);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.row{display:flex;gap:8px}
+input.text{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+input.text:focus{border-color:var(--green)}
+.btn{padding:9px 16px;border-radius:var(--r);border:none;cursor:pointer;font-size:14px;font-weight:500;transition:all .15s}
+.btn-g{background:var(--green);color:#fff}.btn-g:hover{background:var(--green2)}
+.btn-s{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-s:hover{border-color:var(--text2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{opacity:.85}
+.btn-blue:disabled{opacity:.5;cursor:not-allowed}
+
+/* APP */
+#app-screen{display:none}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:12px;height:50px;position:sticky;top:0;z-index:100}
+.logo{font-size:16px;font-weight:800;white-space:nowrap}
+nav{display:flex;gap:2px;flex:1}
+.nb{background:none;border:none;color:var(--text2);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap;position:relative}
+.nb:hover{background:var(--bg3);color:var(--text)}
+.nb.active{background:var(--bg3);color:var(--text)}
+.nb .bdg{position:absolute;top:2px;right:1px;background:var(--red);color:#fff;border-radius:8px;font-size:9px;font-weight:700;padding:1px 4px;line-height:1.4;display:none}
+.header-r{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.chip{background:var(--green);color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.lock-badge{background:var(--red);color:#fff;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;display:none}
+
+/* PROGRESS */
+.prog-wrap{background:var(--bg3);border-bottom:1px solid var(--border);padding:6px 16px;display:flex;align-items:center;gap:12px}
+.prog-lbl{font-size:11px;color:var(--text2);white-space:nowrap}
+.prog-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s}
+.prog-pct{font-size:11px;color:var(--green3);white-space:nowrap;font-weight:600;min-width:32px;text-align:right}
+
+/* TABS */
+.tab{display:none;padding:16px;max-width:1120px;margin:0 auto}
+.tab.active{display:block}
+
+/* GROUP CARDS */
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.gcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ghead{background:var(--bg3);padding:9px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.gletter{font-size:17px;font-weight:800;color:var(--gold)}
+.gteams-list{font-size:11px;color:var(--text2);flex:1}
+.g-check{color:var(--green3);font-size:13px}
+.gmatches{padding:8px;display:flex;flex-direction:column;gap:2px}
+.mrow{display:flex;align-items:center;gap:0;padding:4px 4px;border-radius:6px}
+.mteam{font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px}
+.mteam.home{text-align:right}
+.mteam.away{text-align:left}
+.mteam.bold{font-weight:700;color:#fff}
+/* W / T / L buttons */
+.wdl{display:flex;gap:3px;flex-shrink:0}
+.wb{width:28px;height:26px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text2);font-size:10px;font-weight:700;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center}
+.wb:hover:not([disabled]){border-color:var(--text2);color:var(--text)}
+.wb[disabled]{cursor:not-allowed;opacity:.5}
+.wb.sel-w{background:var(--green4);border-color:var(--green);color:var(--green3)}
+.wb.sel-t{background:var(--yellowbg);border-color:var(--yellow);color:var(--yellow)}
+.wb.sel-l{background:var(--redbg);border-color:var(--red);color:#f85149}
+/* result dot */
+.res-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin:0 2px}
+.res-dot.ok{background:var(--green3)}
+.res-dot.wrong{background:var(--red)}
+.res-dot.none{background:var(--border)}
+
+/* STANDINGS */
+.standing{border-top:1px solid var(--border);padding:6px 10px}
+.srow{display:grid;grid-template-columns:18px 1fr 20px 20px 20px 26px;gap:3px;align-items:center;padding:2px 0;font-size:11px}
+.srow.sh{color:var(--text2);font-size:10px}
+.pbadge{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.p1{background:#1a3a2a;color:var(--green3)}.p2{background:#1a2a3a;color:var(--blue)}
+.p3{background:transparent;color:var(--text2)}.p4{background:transparent;color:#444}
+.spts{font-weight:700;text-align:right}
+.sdim{color:var(--text2);text-align:center;font-size:10px}
+
+/* KNOCKOUT */
+.ko-nav{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.knb{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:5px}
+.knb:hover{border-color:var(--text2);color:var(--text)}
+.knb.active{border-color:var(--green);color:var(--green3);background:var(--green4)}
+.knb .kc{color:var(--green3);font-size:11px}
+.kround{display:none}
+.kround.active{display:block}
+.ko-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.komatch{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.komlabel{background:var(--bg3);padding:5px 10px;font-size:10px;color:var(--text2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.koteam{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;transition:background .1s;border:none;background:transparent;color:var(--text);width:100%;text-align:left;font-size:13px;font-weight:500}
+.koteam:hover:not([disabled]){background:var(--bg3)}
+.koteam[disabled]{cursor:default}
+.koteam.winner{background:var(--green4);color:var(--green3)}
+.koteam.loser{opacity:.38}
+.koteam.tbd{color:var(--text2);font-style:italic;cursor:default;font-size:12px}
+.koteam.gold-win{background:var(--goldbg);color:var(--gold)}
+.kodivider{height:1px;background:var(--border)}
+.ko-info{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text2)}
+.ko-info strong{color:var(--yellow)}
+.pts-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px}
+.pts-ok{background:var(--green4);color:var(--green3);border:1px solid var(--green)}
+.pts-none{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+
+/* 3RD PLACE PICKS */
+.tpsect{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.tpsect h3{margin-bottom:6px;font-size:14px}
+.tpnote{font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5}
+.tpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px}
+.tpbtn{display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .15s;color:var(--text);font-size:12px;width:100%;text-align:left}
+.tpbtn:hover:not(.no-pick){border-color:var(--text2)}
+.tpbtn.sel{border-color:var(--green);background:var(--green4);color:var(--green3)}
+.tpbtn.no-pick{opacity:.4;cursor:default}
+.pcnt{background:var(--green);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px}
+
+/* FINAL */
+.final-box{max-width:480px;margin:0 auto}
+.final-card{background:var(--bg2);border:2px solid var(--gold);border-radius:10px;overflow:hidden}
+.final-label{background:linear-gradient(90deg,#2a1f00,#1a1500);padding:8px 14px;font-size:12px;color:var(--gold);font-weight:600;border-bottom:1px solid #3a2a00}
+
+/* SCORE TAB */
+.lb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.pcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color .15s}
+.pcard:hover{border-color:var(--text2)}
+.pcard.me{border-color:var(--green)}
+.pcard.p-1st{border-color:var(--gold)}
+.pcard.p-2nd{border-color:#9e9e9e}
+.pcard.p-3rd{border-color:#cd7f32}
+.pcard-top{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid var(--border)}
+.rank-badge{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.rank-1{background:var(--goldbg);color:var(--gold);border:2px solid var(--gold)}
+.rank-2{background:#1e1e1e;color:#9e9e9e;border:2px solid #9e9e9e}
+.rank-3{background:#1e1500;color:#cd7f32;border:2px solid #cd7f32}
+.rank-n{background:var(--bg3);color:var(--text2);border:2px solid var(--border);font-size:13px}
+.pcard-prog{height:3px;background:var(--border)}
+.pcard-prog-fill{height:100%;background:var(--green)}
+.pcard-body{padding:12px}
+.score-big{font-size:28px;font-weight:800;color:var(--gold);line-height:1}
+.score-breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.sb-item{text-align:center;background:var(--bg3);border-radius:6px;padding:6px 4px}
+.sb-val{font-size:13px;font-weight:700}
+.sb-lbl{font-size:9px;color:var(--text2);margin-top:1px}
+.no-act-note{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;color:var(--text2);font-size:13px;margin-bottom:16px;text-align:center}
+
+/* RESULTS TAB */
+.results-section{margin-bottom:20px}
+.results-section h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rtag{background:var(--redbg);border:1px solid var(--red);color:#f85149;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600}
+/* auto-fetch bar */
+.fetch-bar{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;flex-wrap:wrap}
+.fetch-bar p{font-size:12px;color:var(--text2);flex:1;min-width:200px}
+.fetch-status{font-size:12px;font-weight:500;min-width:200px}
+.fetch-status.ok{color:var(--green3)}
+.fetch-status.err{color:var(--red)}
+.fetch-status.info{color:var(--text2)}
+/* actual ko */
+.actual-ko-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.actual-match{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.actual-match label{font-size:11px;color:var(--text2);display:block;margin-bottom:6px}
+.actual-match select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:7px 10px;outline:none;cursor:pointer}
+.actual-match select:focus{border-color:var(--green)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:10px;max-width:720px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-head h3{font-size:16px;font-weight:700}
+.xbtn{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}
+.xbtn:hover{color:var(--text)}
+.modal-body{padding:16px}
+
+@media(max-width:600px){
+  .tab{padding:10px}
+  .groups-grid,.actual-ko-grid{grid-template-columns:1fr}
+  header{gap:4px}
+  .logo{font-size:13px}
+  .nb{padding:5px 6px;font-size:11px}
+  .nb .bdg{display:none}
+  .header-r .btn{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-ball">⚽</div>
+    <h1>MM 2026</h1>
+    <h2>FIFA World Cup · Ennustusmäng</h2>
+    <div id="cdown" class="cdown-box cdown-open">⏳ Laen...</div>
+    <div class="player-list" id="player-list"></div>
+    <div class="divider">uus mängija</div>
+    <div class="row">
+      <input id="new-name" class="text" type="text" placeholder="Sinu nimi..." maxlength="30" autocomplete="off">
+      <button class="btn btn-g" onclick="addPlayer()">Alusta</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <header>
+    <div class="logo">⚽ MM 2026</div>
+    <nav>
+      <button class="nb active" onclick="showTab('groups',this)">Grupiturniir<span class="bdg" id="bdg-g"></span></button>
+      <button class="nb" onclick="showTab('knockout',this)">Play-off<span class="bdg" id="bdg-ko"></span></button>
+      <button class="nb" onclick="showTab('score',this)">Skoor</button>
+      <button class="nb" onclick="showTab('results',this)">Tulemused</button>
+    </nav>
+    <div class="header-r">
+      <span class="chip" id="hchip"></span>
+      <span class="lock-badge" id="hlock">🔒 Lukus</span>
+      <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
+    </div>
+  </header>
+  <div class="prog-wrap">
+    <span class="prog-lbl">Ennustuste täielikkus</span>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="prog-pct" id="prog-pct">0%</span>
+  </div>
+
+  <div id="tab-groups" class="tab active">
+    <div style="display:flex;align-items:center;gap:10px;padding:0 0 12px 0;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">W</strong> = kodu võidab &nbsp; <strong style="color:var(--text)">T</strong> = viik &nbsp; <strong style="color:var(--text)">L</strong> = kodu kaotab</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <button class="btn btn-blue btn-sm" id="grp-fetch-btn" onclick="autoFetchResultsGroups()">⬇ Laadi tulemused</button>
+        <span class="fetch-status info" id="grp-fetch-status" style="font-size:12px"></span>
+      </div>
+    </div>
+    <div class="groups-grid" id="groups-grid"></div>
+  </div>
+
+  <div id="tab-knockout" class="tab">
+    <div class="ko-nav">
+      <button class="knb active" onclick="showKo('third',this)">3. koht <span class="kc" id="kc-third"></span></button>
+      <button class="knb" onclick="showKo('r32',this)">1/16 <span class="kc" id="kc-r32"></span></button>
+      <button class="knb" onclick="showKo('r16',this)">1/8 <span class="kc" id="kc-r16"></span></button>
+      <button class="knb" onclick="showKo('qf',this)">Veerand <span class="kc" id="kc-qf"></span></button>
+      <button class="knb" onclick="showKo('sf',this)">Poolfinaal <span class="kc" id="kc-sf"></span></button>
+      <button class="knb" onclick="showKo('final',this)">⭐ Finaal <span class="kc" id="kc-final"></span></button>
+    </div>
+    <div id="ko-third" class="kround active"></div>
+    <div id="ko-r32"   class="kround"></div>
+    <div id="ko-r16"   class="kround"></div>
+    <div id="ko-qf"    class="kround"></div>
+    <div id="ko-sf"    class="kround"></div>
+    <div id="ko-final" class="kround"></div>
+  </div>
+
+  <div id="tab-score"   class="tab"><div id="score-content"></div></div>
+  <div id="tab-results" class="tab"><div id="results-content"></div></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title"></h3>
+      <button class="xbtn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════ CONSTANTS ═══════
+const TOURNAMENT_START = new Date('2026-06-11T12:00:00');
+
+const GROUPS = {
+  A:['Mehhiko','Lõuna-Korea','Lõuna-Aafrika','Tšehhi'],
+  B:['Kanada','Šveits','Bosnia-Herzegovina','Katar'],
+  C:['Brasiilia','Maroko','Haiti','Šotimaa'],
+  D:['USA','Türgi','Paraguay','Austraalia'],
+  E:['Saksamaa','Elevandiluurannik','Ecuador','Curaçao'],
+  F:['Holland','Jaapan','Rootsi','Tuneesia'],
+  G:['Belgia','Iraan','Egiptus','Uus-Meremaa'],
+  H:['Hispaania','Uruguay','Saudi Araabia','Roheneemesaared'],
+  I:['Prantsusmaa','Senegal','Norra','Iraak'],
+  J:['Argentina','Alžeeria','Austria','Jordaania'],
+  K:['Portugal','Colombia','DR Kongo','Usbekistan'],
+  L:['Inglismaa','Horvaatia','Ghana','Panama'],
+};
+
+const FLAGS = {
+  'Mehhiko':'🇲🇽','Lõuna-Korea':'🇰🇷','Lõuna-Aafrika':'🇿🇦','Tšehhi':'🇨🇿',
+  'Kanada':'🇨🇦','Šveits':'🇨🇭','Bosnia-Herzegovina':'🇧🇦','Katar':'🇶🇦',
+  'Brasiilia':'🇧🇷','Maroko':'🇲🇦','Haiti':'🇭🇹','Šotimaa':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'USA':'🇺🇸','Türgi':'🇹🇷','Paraguay':'🇵🇾','Austraalia':'🇦🇺',
+  'Saksamaa':'🇩🇪','Elevandiluurannik':'🇨🇮','Ecuador':'🇪🇨','Curaçao':'🇨🇼',
+  'Holland':'🇳🇱','Jaapan':'🇯🇵','Rootsi':'🇸🇪','Tuneesia':'🇹🇳',
+  'Belgia':'🇧🇪','Iraan':'🇮🇷','Egiptus':'🇪🇬','Uus-Meremaa':'🇳🇿',
+  'Hispaania':'🇪🇸','Uruguay':'🇺🇾','Saudi Araabia':'🇸🇦','Roheneemesaared':'🇨🇻',
+  'Prantsusmaa':'🇫🇷','Senegal':'🇸🇳','Norra':'🇳🇴','Iraak':'🇮🇶',
+  'Argentina':'🇦🇷','Alžeeria':'🇩🇿','Austria':'🇦🇹','Jordaania':'🇯🇴',
+  'Portugal':'🇵🇹','Colombia':'🇨🇴','DR Kongo':'🇨🇩','Usbekistan':'🇺🇿',
+  'Inglismaa':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Horvaatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦',
+};
+
+// ESPN team name → Estonian name
+const ESPN_MAP = {
+  'Mexico':'Mehhiko','South Korea':'Lõuna-Korea','South Africa':'Lõuna-Aafrika',
+  'Czech Republic':'Tšehhi','Czechia':'Tšehhi',
+  'Canada':'Kanada','Switzerland':'Šveits','Bosnia and Herzegovina':'Bosnia-Herzegovina','Bosnia-Herzegovina':'Bosnia-Herzegovina',
+  'Qatar':'Katar','Brazil':'Brasiilia','Morocco':'Maroko','Haiti':'Haiti','Scotland':'Šotimaa',
+  'United States':'USA','Turkey':'Türgi','Türkiye':'Türgi','Paraguay':'Paraguay','Australia':'Austraalia',
+  'Germany':'Saksamaa',"Ivory Coast":'Elevandiluurannik',"Côte d'Ivoire":'Elevandiluurannik','Cote d\'Ivoire':'Elevandiluurannik',
+  'Ecuador':'Ecuador','Curacao':'Curaçao','Curaçao':'Curaçao',
+  'Netherlands':'Holland','Japan':'Jaapan','Sweden':'Rootsi','Tunisia':'Tuneesia',
+  'Belgium':'Belgia','Iran':'Iraan','Egypt':'Egiptus','New Zealand':'Uus-Meremaa',
+  'Spain':'Hispaania','Uruguay':'Uruguay','Saudi Arabia':'Saudi Araabia','Cape Verde':'Roheneemesaared',
+  'France':'Prantsusmaa','Senegal':'Senegal','Norway':'Norra','Iraq':'Iraak',
+  'Argentina':'Argentina','Algeria':'Alžeeria','Austria':'Austria','Jordan':'Jordaania',
+  'Portugal':'Portugal','Colombia':'Colombia','DR Congo':'DR Kongo','Democratic Republic of Congo':'DR Kongo',
+  'Uzbekistan':'Usbekistan','England':'Inglismaa','Croatia':'Horvaatia','Ghana':'Ghana','Panama':'Panama',
+};
+
+const ALL_TEAMS = Object.values(GROUPS).flat();
+// 6 matches per group: [home_idx, away_idx]
+const GM = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]];
+
+// R32 bracket: 16 matches [slotA, slotB]
+const R32 = [
+  ['W-A','T-0'],['R-B','W-C'],['T-1','W-D'],['R-A','R-C'],
+  ['W-E','T-2'],['R-F','W-G'],['T-3','W-H'],['R-E','R-G'],
+  ['W-I','T-4'],['R-J','W-K'],['T-5','W-L'],['R-I','R-K'],
+  ['R-D','T-6'],['W-B','W-J'],['R-H','T-7'],['W-F','R-L'],
+];
+
+const RND_NAMES = {r32:'1/16 finaal',r16:'1/8 finaal',qf:'Veerandfinaal',sf:'Poolfinaal'};
+const RND_PTS   = {r32:3, r16:5, qf:8, sf:10, final:20};
+const TOTAL_PREDS = 112;
+
+// ═══════ STATE ═══════
+let me = null, locked = false;
+
+function getAll(){
+  try{return JSON.parse(localStorage.getItem('wc2026'))||{players:[],preds:{},actual:freshActual()};}
+  catch{return{players:[],preds:{},actual:freshActual()};}
+}
+function saveAll(s){localStorage.setItem('wc2026',JSON.stringify(s));}
+function myPreds(){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();return s.preds[me];}
+function freshPreds(){return{results:{},thirds:[],ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
+function freshActual(){return{results:{},ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
+function getActual(){const s=getAll();if(!s.actual)s.actual=freshActual();return s.actual;}
+function updateMe(fn){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();fn(s.preds[me]);saveAll(s);}
+function updateActual(fn){const s=getAll();if(!s.actual)s.actual=freshActual();fn(s.actual);saveAll(s);}
+
+// ═══════ SCORING ═══════
+function calcScore(p){
+  const act=getActual();
+  let grp=0,r32s=0,r16s=0,qfs=0,sfs=0,fin=0;
+  Object.keys(GROUPS).forEach(g=>{GM.forEach((_,mi)=>{const k=`${g}_${mi}`;if(act.results[k]&&p.results&&p.results[k]===act.results[k])grp++;});});
+  const rounds={r32:0,r16:0,qf:0,sf:0};
+  ['r32','r16','qf','sf'].forEach(rnd=>{const aw=act.ko[rnd]||[],pw=p.ko?.[rnd]||[];aw.forEach((w,i)=>{if(w&&pw[i]===w)rounds[rnd]+=RND_PTS[rnd];});});
+  if(act.ko.final&&p.ko?.final===act.ko.final)fin=RND_PTS.final;
+  return{total:grp+rounds.r32+rounds.r16+rounds.qf+rounds.sf+fin,grp,r32:rounds.r32,r16:rounds.r16,qf:rounds.qf,sf:rounds.sf,fin};
+}
+function hasAnyActual(){const a=getActual();return Object.values(a.results).some(Boolean)||(a.ko.r32||[]).some(Boolean)||!!a.ko.final;}
+
+// ═══════ STANDINGS ═══════
+function calcStandings(letter,p){
+  const teams=GROUPS[letter],st=teams.map(t=>({name:t,pts:0,w:0,d:0,l:0,played:0}));
+  GM.forEach(([hi,ai],mi)=>{
+    const r=p.results&&p.results[`${letter}_${mi}`];if(!r)return;
+    st[hi].played++;st[ai].played++;
+    if(r==='W'){st[hi].pts+=3;st[hi].w++;st[ai].l++;}
+    else if(r==='T'){st[hi].pts++;st[ai].pts++;st[hi].d++;st[ai].d++;}
+    else{st[ai].pts+=3;st[ai].w++;st[hi].l++;}
+  });
+  return[...st].sort((a,b)=>b.pts-a.pts||b.w-a.w||a.name.localeCompare(b.name));
+}
+function getQ(p){const q={};Object.keys(GROUPS).forEach(g=>{const st=calcStandings(g,p);q[`W-${g}`]=st[0]?.name;q[`R-${g}`]=st[1]?.name;});return q;}
+function resolveSlot(slot,p){
+  const q=getQ(p);
+  if(slot.startsWith('W-')||slot.startsWith('R-'))return q[slot]||slot;
+  if(slot.startsWith('T-')){const i=parseInt(slot.slice(2));return(p.thirds||[])[i]||`3. koht #${i+1}`;}
+  return slot;
+}
+function isSlot(s){return!s||s.startsWith('W-')||s.startsWith('R-')||s.startsWith('T-')||s.startsWith('3. koht');}
+function flag(t){return FLAGS[t]||'';}
+function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function nameHue(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;return h;}
+
+// ═══════ PROGRESS ═══════
+function countPreds(p){
+  if(!p)return 0;let n=0;
+  Object.keys(GROUPS).forEach(g=>GM.forEach((_,mi)=>{if(p.results&&p.results[`${g}_${mi}`])n++;}));
+  n+=Math.min((p.thirds||[]).length,8);
+  n+=(p.ko?.r32||[]).filter(Boolean).length+(p.ko?.r16||[]).filter(Boolean).length+
+     (p.ko?.qf||[]).filter(Boolean).length+(p.ko?.sf||[]).filter(Boolean).length;
+  if(p.ko?.tp)n++;if(p.ko?.final)n++;return n;
+}
+function updateProgress(){
+  const p=myPreds(),n=countPreds(p),pct=Math.round(n/TOTAL_PREDS*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-pct').textContent=pct+'%';
+  const gm=12-Object.keys(GROUPS).filter(g=>GM.every((_,mi)=>p.results&&p.results[`${g}_${mi}`])).length;
+  const bg=document.getElementById('bdg-g');bg.textContent=gm;bg.style.display=gm>0?'inline':'none';
+  const km=[8-Math.min((p.thirds||[]).length,8),16-(p.ko?.r32||[]).filter(Boolean).length,
+    8-(p.ko?.r16||[]).filter(Boolean).length,4-(p.ko?.qf||[]).filter(Boolean).length,
+    2-(p.ko?.sf||[]).filter(Boolean).length,(p.ko?.tp?0:1)+(p.ko?.final?0:1)].reduce((a,b)=>a+b,0);
+  const bk=document.getElementById('bdg-ko');bk.textContent=km;bk.style.display=km>0?'inline':'none';
+  ['third','r32','r16','qf','sf','final'].forEach(k=>{
+    const el=document.getElementById('kc-'+k);if(!el)return;
+    const done={third:(p.thirds||[]).length>=8,r32:(p.ko?.r32||[]).filter(Boolean).length===16,
+      r16:(p.ko?.r16||[]).filter(Boolean).length===8,qf:(p.ko?.qf||[]).filter(Boolean).length===4,
+      sf:(p.ko?.sf||[]).filter(Boolean).length===2,final:!!(p.ko?.tp&&p.ko?.final)}[k];
+    el.textContent=done?'✓':'';
+  });
+}
+
+// ═══════ LOGIN ═══════
+function renderLogin(){
+  const s=getAll(),now=new Date(),diff=TOURNAMENT_START-now;
+  const cdown=document.getElementById('cdown');
+  if(diff>0){const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000);
+    cdown.textContent=`⏰ Turniir algab ${d} päeva ja ${h} tunni pärast`;cdown.className='cdown-box cdown-open';}
+  else{cdown.textContent='🔒 Turniir on käimas – ennustused lukustatud';cdown.className='cdown-box cdown-locked';}
+  const list=document.getElementById('player-list');
+  if(!s.players.length){list.innerHTML='<p style="color:var(--text2);font-size:12px;text-align:center;padding:6px">Mängijaid pole veel lisatud</p>';return;}
+  list.innerHTML=s.players.map(n=>{
+    const p=s.preds[n]||freshPreds(),cnt=countPreds(p),pct=Math.round(cnt/TOTAL_PREDS*100),done=cnt===TOTAL_PREDS;
+    const sc=calcScore(p),champ=p.ko?.final||'',hue=nameHue(n);
+    const scoreStr=hasAnyActual()?` · ${sc.total}p`:'';
+    return`<div class="player-item" onclick="login('${esc(n)}')">
+      <div class="avatar" style="background:hsl(${hue},45%,32%)">${n[0].toUpperCase()}</div>
+      <div class="p-name">${n}</div>
+      <div class="${done?'p-done':'p-prog'}">${done?'✓ Valmis':pct+'%'}${scoreStr}${champ?' · 🏆 '+champ:''}</div>
+    </div>`;
+  }).join('');
+}
+function addPlayer(){
+  const inp=document.getElementById('new-name'),name=inp.value.trim();if(!name)return;
+  const s=getAll();if(!s.players.includes(name)){s.players.push(name);saveAll(s);}
+  inp.value='';login(name);
+}
+function login(name){
+  me=name;locked=new Date()>=TOURNAMENT_START;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  document.getElementById('hchip').textContent=name;
+  document.getElementById('hlock').style.display=locked?'inline':'none';
+  renderAll();
+}
+function logout(){
+  me=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app-screen').style.display='none';
+  renderLogin();
+}
+document.getElementById('new-name').addEventListener('keydown',e=>{if(e.key==='Enter')addPlayer();});
+
+// ═══════ NAV ═══════
+function showTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');
+  if(name==='score')renderScore();if(name==='results')renderResults();
+}
+function showKo(round,btn){
+  document.querySelectorAll('.kround').forEach(r=>r.classList.remove('active'));
+  document.querySelectorAll('.knb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ko-'+round).classList.add('active');btn.classList.add('active');
+}
+function renderAll(){renderGroups();renderKnockout();updateProgress();}
+
+// ═══════ GROUP CARD ═══════
+function renderGroups(){
+  const p=myPreds(),act=getActual();
+  document.getElementById('groups-grid').innerHTML=Object.entries(GROUPS).map(([l,t])=>groupCard(l,t,p,false,act)).join('');
+}
+function groupCard(letter,teams,p,readOnly,act){
+  act=act||{results:{}};
+  const allDone=GM.every((_,mi)=>p.results&&p.results[`${letter}_${mi}`]);
+  const matches=GM.map(([hi,ai],mi)=>{
+    const key=`${letter}_${mi}`,r=p.results&&p.results[key],ar=act.results&&act.results[key];
+    const dis=(readOnly||locked)?'disabled':'';
+    const ok=ar&&r===ar,wrong=ar&&r&&r!==ar;
+    const dot=ar?`<div class="res-dot ${ok?'ok':'wrong'}"></div>`:'<div class="res-dot none"></div>';
+    const selW=r==='W',selT=r==='T',selL=r==='L';
+    const oc=(v)=>(!readOnly&&!locked)?`onclick="setResult('${letter}',${mi},'${v}')"`:'';
+    return`<div class="mrow">
+      ${!readOnly?dot:''}
+      <span class="mteam home ${selW?'bold':''}">${flag(teams[hi])} ${teams[hi]}</span>
+      <div class="wdl">
+        <button class="wb ${selW?'sel-w':''}" ${oc('W')} ${dis} title="Kodumeeskond võidab">W</button>
+        <button class="wb ${selT?'sel-t':''}" ${oc('T')} ${dis} title="Viik">T</button>
+        <button class="wb ${selL?'sel-l':''}" ${oc('L')} ${dis} title="Külaline võidab">L</button>
+      </div>
+      <span class="mteam away ${selL?'bold':''}">${teams[ai]} ${flag(teams[ai])}</span>
+    </div>`;
+  }).join('');
+  const st=calcStandings(letter,p);
+  const stRows=st.map((s,i)=>`<div class="srow">
+    <div class="pbadge ${i===0?'p1':i===1?'p2':i===2?'p3':'p4'}">${i+1}</div>
+    <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${flag(s.name)} ${s.name}</div>
+    <div class="sdim">${s.played?s.w+'v':''}</div><div class="sdim">${s.played?s.d+'v':''}</div>
+    <div class="sdim">${s.played?s.l+'k':''}</div><div class="spts">${s.pts}</div></div>`).join('');
+  return`<div class="gcard">
+    <div class="ghead"><div class="gletter">G${letter}</div>
+      <div class="gteams-list">${teams.map(t=>flag(t)+' '+t).join(' · ')}</div>
+      <div class="g-check">${allDone?'✓':''}</div></div>
+    <div class="gmatches">${matches}</div>
+    <div class="standing">
+      <div class="srow sh"><div></div><div></div><div class="sdim">W</div><div class="sdim">T</div><div class="sdim">L</div><div class="spts">P</div></div>
+      ${stRows}</div>
+  </div>`;
+}
+function setResult(letter,mi,val){
+  if(locked)return;
+  updateMe(p=>{if(!p.results)p.results={};const k=`${letter}_${mi}`;p.results[k]=p.results[k]===val?null:val;});
+  renderGroups();renderKoRound('r32');updateProgress();
+}
+
+// ═══════ KNOCKOUT ═══════
+function renderKnockout(){
+  renderThirdPlace();renderKoRound('r32');renderKoRound('r16');
+  renderKoRound('qf');renderKoRound('sf');renderFinal();updateProgress();
+}
+function renderThirdPlace(){
+  const p=myPreds(),sel=p.thirds||[],canMore=sel.length<8,cnt=sel.length;
+  const items=Object.keys(GROUPS).map(g=>{
+    const st=calcStandings(g,p),team=st[2]?.name||`G${g} kolmas`;
+    const isSel=sel.includes(team),noPick=!isSel&&!canMore;
+    const click=(!locked&&!noPick)?`onclick="toggleThird('${esc(team)}')"`:'';
+    return`<button class="tpbtn ${isSel?'sel':''} ${(noPick||locked)?'no-pick':''}" ${click}>
+      <span>${flag(team)}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">G${g}: ${team}</span>
+      ${isSel?'<span>✓</span>':''}
+    </button>`;
+  }).join('');
+  document.getElementById('ko-third').innerHTML=`<div class="tpsect">
+    <h3>Vali 8 kolmandalt kohalt edasipääsejat <span class="pcnt">${cnt}/8</span></h3>
+    <p class="tpnote">Iga grupi top 2 pääsevad automaatselt (24 meeskonda). Lisaks 8 paremat kolmandat kohta → 32 meeskonda 1/16 finaalis.</p>
+    <div class="tpgrid">${items}</div></div>`;
+}
+function toggleThird(team){
+  if(locked)return;
+  updateMe(p=>{if(!p.thirds)p.thirds=[];const i=p.thirds.indexOf(team);
+    if(i>=0){p.thirds.splice(i,1);clearKoFrom(p,'r32');}else if(p.thirds.length<8)p.thirds.push(team);});
+  renderThirdPlace();renderKoRound('r32');updateProgress();
+}
+function r32Pairs(p){return R32.map(([a,b])=>[resolveSlot(a,p),resolveSlot(b,p)]);}
+function nextPairs(rnd,p){const prev={r16:'r32',qf:'r16',sf:'qf'}[rnd],pw=p.ko[prev]||[],n={r16:8,qf:4,sf:2}[rnd];
+  return Array.from({length:n},(_,i)=>[pw[i*2]||null,pw[i*2+1]||null]);}
+function renderKoRound(round){
+  const p=myPreds(),act=getActual(),winners=p.ko[round]||[],actW=act.ko[round]||[];
+  const pairs=round==='r32'?r32Pairs(p):nextPairs(round,p),pts=RND_PTS[round];
+  const prevDone=round==='r32'?(p.thirds||[]).length>=8
+    :((p.ko[{r16:'r32',qf:'r16',sf:'qf'}[round]]||[]).filter(Boolean).length==={r16:16,qf:8,sf:4}[round]);
+  const info=!prevDone?`<div class="ko-info">⚠️ <strong>Täida esmalt eelmine voor</strong></div>`:'';
+  const cards=pairs.map(([tA,tB],mi)=>{
+    const w=winners[mi]||null,aw=actW[mi]||null;
+    const aW=w&&w===tA&&!isSlot(tA),bW=w&&w===tB&&!isSlot(tB);
+    const correct=aw&&w===aw,hasResult=!!aw;
+    const ptsBadge=hasResult?`<span class="pts-badge ${correct?'pts-ok':'pts-none'}">${correct?'+'+pts+'p':'0p'}</span>`:'';
+    const clkA=(!locked&&tA&&!isSlot(tA))?`onclick="pickKo('${round}',${mi},'${esc(tA)}')"`:'' ;
+    const clkB=(!locked&&tB&&!isSlot(tB))?`onclick="pickKo('${round}',${mi},'${esc(tB)}')"`:'' ;
+    const btnA=tA&&!isSlot(tA)?`<button class="koteam ${aW?'winner':w?'loser':''}" ${clkA}>${aW?'🏆 ':''}${flag(tA)} ${tA}</button>`
+      :`<button class="koteam tbd" disabled>${tA||'Määramata'}</button>`;
+    const btnB=tB&&!isSlot(tB)?`<button class="koteam ${bW?'winner':w?'loser':''}" ${clkB}>${bW?'🏆 ':''}${flag(tB)} ${tB}</button>`
+      :`<button class="koteam tbd" disabled>${tB||'Määramata'}</button>`;
+    return`<div class="komatch"><div class="komlabel"><span>${RND_NAMES[round]} #${mi+1}</span>${ptsBadge}</div>
+      ${btnA}<div class="kodivider"></div>${btnB}</div>`;
+  }).join('');
+  document.getElementById('ko-'+round).innerHTML=info+`<div class="ko-grid">${cards}</div>`;
+}
+function pickKo(round,mi,team){
+  if(locked)return;
+  updateMe(p=>{if(!p.ko[round])p.ko[round]=[];const same=p.ko[round][mi]===team;
+    p.ko[round][mi]=same?null:team;if(!same)clearKoDownstream(p,round,mi);});
+  renderKoRound(round);const nxt={r32:'r16',r16:'qf',qf:'sf',sf:'final'}[round];
+  if(nxt==='final')renderFinal();else renderKoRound(nxt);if(round==='sf')renderFinal();updateProgress();
+}
+function clearKoDownstream(p,round,mi){
+  const seq=['r32','r16','qf','sf'];let idx=seq.indexOf(round),midx=mi;
+  while(idx<seq.length-1){idx++;midx=Math.floor(midx/2);if(!p.ko[seq[idx]])break;p.ko[seq[idx]][midx]=null;}
+  p.ko.tp=null;p.ko.final=null;
+}
+function clearKoFrom(p,round){
+  const seq=['r32','r16','qf','sf'],idx=seq.indexOf(round);
+  for(let i=idx;i<seq.length;i++)p.ko[seq[i]]=[];p.ko.tp=null;p.ko.final=null;
+}
+function renderFinal(){
+  const p=myPreds(),act=getActual(),sf=p.ko.sf||[],qfw=p.ko.qf||[];
+  const sf0=[qfw[0]||null,qfw[1]||null],sf1=[qfw[2]||null,qfw[3]||null];
+  const f1=sf[0]||null,f2=sf[1]||null,champ=p.ko.final,tp=p.ko.tp;
+  const actFin=act.ko.final,actTp=act.ko.tp;
+  const sfL0=sf0.find(t=>t&&!isSlot(t)&&t!==f1),sfL1=sf1.find(t=>t&&!isSlot(t)&&t!==f2);
+  const mkBtn=(team,winner,fn,gold=false)=>{
+    if(!team||isSlot(team))return`<button class="koteam tbd" disabled>${team||'Määramata'}</button>`;
+    const isW=winner===team,click=!locked?`onclick="${fn}('${esc(team)}')"`:'' ;
+    return`<button class="koteam ${isW?(gold?'gold-win':'winner'):winner?'loser':''}" ${click}>${isW?(gold?'🏆 ':'🥉 '):''}${flag(team)} ${team}</button>`;
+  };
+  const finPts=actFin&&champ===actFin;
+  const tpHtml=(sfL0&&sfL1&&!isSlot(sfL0)&&!isSlot(sfL1))?`
+    <div style="margin-bottom:20px"><h3 style="margin-bottom:10px;color:var(--text2);font-size:14px">🥉 3. koha mäng · 14. juuli</h3>
+      <div class="komatch"><div class="komlabel">3. koha mäng</div>
+        ${mkBtn(sfL0,tp,'pickTP')}<div class="kodivider"></div>${mkBtn(sfL1,tp,'pickTP')}</div></div>`
+    :`<div class="ko-info" style="margin-bottom:20px">⚠️ <strong>Täida poolfinaalid</strong> 3. koha mängu ennustamiseks</div>`;
+  const champBlock=champ?`<div style="text-align:center;padding:14px;border-radius:8px;background:var(--goldbg);border:1px solid var(--gold);margin-bottom:12px">
+    <div style="font-size:28px;margin-bottom:4px">🏆</div>
+    <div style="font-weight:800;color:var(--gold);font-size:17px">${flag(champ)} ${champ}</div>
+    <div style="font-size:11px;color:${finPts?'var(--green3)':'var(--text2)'};margin-top:3px">${finPts?'✓ Õige! +20p':actFin?`❌ Tegelik: ${flag(actFin)} ${actFin}`:'Maailmameistri ennustus'}</div>
+  </div>`:'';
+  document.getElementById('ko-final').innerHTML=`<div class="final-box">
+    ${tpHtml}
+    <h3 style="margin-bottom:10px;font-size:15px">🏆 Finaal · 19. juuli 2026</h3>
+    ${champBlock}
+    <div class="komatch final-card" style="${champ?'border-color:var(--gold)':''}">
+      <div class="final-label">${champ?'Muuda':'Vali maailmameister'} <strong style="color:var(--gold)">+20 punkti</strong></div>
+      ${mkBtn(f1,champ,'pickFinal',true)}<div class="kodivider"></div>${mkBtn(f2,champ,'pickFinal',true)}
+    </div>
+    ${!f1||!f2?`<div class="ko-info" style="margin-top:10px">⚠️ <strong>Täida poolfinaalid</strong></div>`:''}
+  </div>`;
+}
+function pickTP(team){if(locked)return;updateMe(p=>{p.ko.tp=p.ko.tp===team?null:team;});renderFinal();updateProgress();}
+function pickFinal(team){if(locked)return;updateMe(p=>{p.ko.final=p.ko.final===team?null:team;});renderFinal();updateProgress();}
+
+// ═══════ SCORE TAB ═══════
+function renderScore(){
+  const s=getAll(),anyAct=hasAnyActual();
+  const noActNote=!anyAct?`<div class="no-act-note">⏳ Tulemused ilmuvad pärast mängude toimumist. Sisesta need <strong>Tulemused</strong> vahelehel.</div>`:'';
+  if(!s.players.length){document.getElementById('score-content').innerHTML='<p style="color:var(--text2)">Pole mängijaid.</p>';return;}
+  const ranked=s.players.map(n=>({name:n,p:s.preds[n]||freshPreds(),sc:calcScore(s.preds[n]||freshPreds())}))
+    .sort((a,b)=>b.sc.total-a.sc.total||a.name.localeCompare(b.name));
+  let prevSc=-1,prevRank=0;
+  const cards=ranked.map(({name,p,sc},i)=>{
+    const rank=sc.total!==prevSc?i+1:prevRank;prevSc=sc.total;prevRank=rank;
+    const hue=nameHue(name),cnt=countPreds(p),pct=Math.round(cnt/TOTAL_PREDS*100),champ=p.ko?.final||'';
+    const rankCls=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'rank-n';
+    const cardCls=rank===1?'p-1st':rank===2?'p-2nd':rank===3?'p-3rd':'';
+    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+    return`<div class="pcard ${name===me?'me':''} ${cardCls}" onclick="viewPlayer('${esc(name)}')">
+      <div class="pcard-top">
+        <div class="rank-badge ${rankCls}">${medal||rank}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px">${name}${name===me?' <span style="font-size:10px;color:var(--green3)">(mina)</span>':''}</div>
+          <div style="font-size:12px;color:var(--text2)">${champ?`🏆 ${flag(champ)} ${champ}`:'Finalist ennustamata'}</div>
+        </div>
+        <div style="text-align:right"><div class="score-big">${sc.total}</div><div style="font-size:10px;color:var(--text2)">punkti</div></div>
+      </div>
+      <div class="pcard-prog"><div class="pcard-prog-fill" style="width:${pct}%"></div></div>
+      <div class="score-breakdown">
+        <div class="sb-item"><div class="sb-val" style="color:var(--text2)">${sc.grp}</div><div class="sb-lbl">Grupp ×1</div></div>
+        <div class="sb-item"><div class="sb-val" style="color:#388bfd">${sc.r32+sc.r16}</div><div class="sb-lbl">1/16+1/8</div></div>
+        <div class="sb-item"><div class="sb-val" style="color:var(--yellow)">${sc.qf+sc.sf}</div><div class="sb-lbl">VF+PF</div></div>
+        <div class="sb-item"><div class="sb-val" style="color:var(--gold)">${sc.fin}</div><div class="sb-lbl">Finaal ×20</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('score-content').innerHTML=`${noActNote}<h2 style="margin-bottom:14px;font-size:17px">🏆 Edetabel</h2><div class="lb-grid">${cards}</div>`;
+}
+
+// ═══════ RESULTS TAB ═══════
+function renderResults(){
+  const act=getActual();
+  const fetchBar=`<div class="fetch-bar">
+    <div>
+      <div style="font-weight:600;font-size:13px;margin-bottom:4px">🔄 Automaatne tulemuste laadimine</div>
+      <p>Laeb lõppenud mängude tulemused ESPN spordist. Töötab interneti kaudu.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+      <button class="btn btn-blue" id="auto-fetch-btn" onclick="autoFetchResults()">⬇ Laadi tulemused</button>
+      <span class="fetch-status info" id="fetch-status"></span>
+    </div>
+  </div>`;
+  const groupsHtml=`<div class="results-section">
+    <h3>Grupiturniir <span class="rtag">+1 punkt iga õige W/T/L eest</span></h3>
+    <p style="color:var(--text2);font-size:12px;margin-bottom:12px"><strong>W</strong> = kodumeeskond võidab &nbsp; <strong>T</strong> = viik &nbsp; <strong>L</strong> = külaline võidab</p>
+    <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act)).join('')}</div>
+  </div>`;
+  document.getElementById('results-content').innerHTML=`
+    <div style="background:var(--redbg);border:1px solid var(--red);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:#f85149">
+      ⚽ <strong>Tegelikud tulemused</strong> — ühine lehekülg, mida kõik näevad. Üks inimene sisestab pärast iga mängu.
+    </div>
+    ${fetchBar}
+    ${groupsHtml}
+    ${renderActualKo(act)}`;
+}
+function actualGroupCard(letter,teams,act){
+  const matches=GM.map(([hi,ai],mi)=>{
+    const key=`${letter}_${mi}`,r=act.results&&act.results[key];
+    const selW=r==='W',selT=r==='T',selL=r==='L';
+    const oc=(v)=>`onclick="setActualResult('${letter}',${mi},'${v}')"`;
+    return`<div class="mrow">
+      <span class="mteam home ${selW?'bold':''}">${flag(teams[hi])} ${teams[hi]}</span>
+      <div class="wdl">
+        <button class="wb ${selW?'sel-w':''}" ${oc('W')} title="Kodumeeskond võidab">W</button>
+        <button class="wb ${selT?'sel-t':''}" ${oc('T')} title="Viik">T</button>
+        <button class="wb ${selL?'sel-l':''}" ${oc('L')} title="Külaline võidab">L</button>
+      </div>
+      <span class="mteam away ${selL?'bold':''}">${teams[ai]} ${flag(teams[ai])}</span>
+    </div>`;
+  }).join('');
+  const done=GM.every((_,mi)=>act.results&&act.results[`${letter}_${mi}`]);
+  return`<div class="gcard"><div class="ghead"><div class="gletter">G${letter}</div>
+    <div class="gteams-list">${teams.map(t=>flag(t)+' '+t).join(' · ')}</div>
+    <div class="g-check">${done?'✓':''}</div></div>
+    <div class="gmatches">${matches}</div></div>`;
+}
+function setActualResult(letter,mi,val){
+  updateActual(a=>{if(!a.results)a.results={};const k=`${letter}_${mi}`;a.results[k]=a.results[k]===val?null:val;});
+  renderResults();renderGroups();
+}
+function renderActualKo(act){
+  const rounds=['r32','r16','qf','sf'];
+  const koHtml=rounds.map(rnd=>{
+    const n={r32:16,r16:8,qf:4,sf:2}[rnd];
+    const matches=Array.from({length:n},(_,mi)=>{
+      const cur=(act.ko[rnd]&&act.ko[rnd][mi])||'';
+      return`<div class="actual-match"><label>${RND_NAMES[rnd]} #${mi+1} võitja</label>
+        <select onchange="setActualKo('${rnd}',${mi},this.value)">
+          <option value="">– vali –</option>
+          ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${cur===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
+        </select></div>`;
+    }).join('');
+    return`<div class="results-section"><h3>${RND_NAMES[rnd]} võitjad <span class="rtag">+${RND_PTS[rnd]}p</span></h3>
+      <div class="actual-ko-grid">${matches}</div></div>`;
+  }).join('');
+  const f=act.ko.final||'',tp3=act.ko.tp||'';
+  const finalHtml=`<div class="results-section"><h3>Finaal + 3. koha mäng <span class="rtag">+20p finaali eest</span></h3>
+    <div class="actual-ko-grid">
+      <div class="actual-match"><label>🏆 Finaali võitja (maailmameister)</label>
+        <select onchange="setActualKoFinal(this.value)"><option value="">– vali –</option>
+          ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${f===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
+        </select></div>
+      <div class="actual-match"><label>🥉 3. koha mängu võitja</label>
+        <select onchange="setActualKoTp(this.value)"><option value="">– vali –</option>
+          ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${tp3===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
+        </select></div>
+    </div></div>`;
+  return koHtml+finalHtml;
+}
+function setActualKo(rnd,mi,val){updateActual(a=>{if(!a.ko[rnd])a.ko[rnd]=[];a.ko[rnd][mi]=val||null;});renderResults();}
+function setActualKoFinal(val){updateActual(a=>{a.ko.final=val||null;});renderResults();renderFinal();}
+function setActualKoTp(val){updateActual(a=>{a.ko.tp=val||null;});renderResults();renderFinal();}
+
+// ═══════ AUTO-FETCH ═══════
+// Build lookup: "EstTeamHome|EstTeamAway" → { letter, mi }
+function buildMatchLookup(){
+  const lk={};
+  Object.entries(GROUPS).forEach(([letter,teams])=>{
+    GM.forEach(([hi,ai],mi)=>{
+      lk[`${teams[hi]}|${teams[ai]}`]={letter,mi,swap:false};
+      lk[`${teams[ai]}|${teams[hi]}`]={letter,mi,swap:true};
+    });
+  });
+  return lk;
+}
+function espnName(n){return ESPN_MAP[n]||n;}
+function toWTL(homeScore,awayScore){return homeScore>awayScore?'W':homeScore<awayScore?'L':'T';}
+
+async function autoFetchResults(){
+  const btn=document.getElementById('auto-fetch-btn');
+  const status=document.getElementById('fetch-status');
+  btn.disabled=true;btn.textContent='⏳ Laen...';
+  status.textContent='Ühendan ESPN-iga...';status.className='fetch-status info';
+
+  const lk=buildMatchLookup();
+  let updated=0,checked=0;
+  const PROXIES=[
+    url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+
+  // Try fetching full date range in one call, then individual days as fallback
+  const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  const urls=[
+    `${espnBase}?dates=20260611-20260719&limit=200`,
+    ...Array.from({length:40},(_,i)=>{const d=new Date('2026-06-11');d.setDate(d.getDate()+i);return`${espnBase}?dates=${d.toISOString().slice(0,10).replace(/-/g,'')}`;}),
+  ];
+
+  for(const proxy of PROXIES){
+    try{
+      // Try range query first
+      const rangeUrl=urls[0];
+      const res=await fetch(proxy(rangeUrl),{signal:AbortSignal.timeout(8000)});
+      if(!res.ok)continue;
+      const json=await res.json();
+      const raw=json.contents||json;
+      const data=typeof raw==='string'?JSON.parse(raw):raw;
+      const events=data.events||[];
+      if(!events.length){
+        // Try daily fetch
+        for(const dayUrl of urls.slice(1)){
+          try{
+            const r2=await fetch(proxy(dayUrl),{signal:AbortSignal.timeout(5000)});
+            if(!r2.ok)continue;
+            const j2=await r2.json();
+            const raw2=j2.contents||j2;
+            const d2=typeof raw2==='string'?JSON.parse(raw2):raw2;
+            checked++;
+            if(processEvents(d2.events||[],lk))updated+=(d2.events||[]).filter(e=>e.competitions?.[0]?.status?.type?.completed).length;
+          }catch{}
+        }
+        break;
+      }else{
+        // Process range results
+        let n=0;
+        events.forEach(event=>{
+          const comp=event.competitions?.[0];
+          if(!comp?.status?.type?.completed)return;
+          const home=comp.competitors?.find(c=>c.homeAway==='home');
+          const away=comp.competitors?.find(c=>c.homeAway==='away');
+          if(!home||!away)return;
+          const hN=espnName(home.team?.displayName||'');
+          const aN=espnName(away.team?.displayName||'');
+          const hS=parseInt(home.score),aS=parseInt(away.score);
+          if(isNaN(hS)||isNaN(aS))return;
+          const m=lk[`${hN}|${aN}`];
+          if(!m)return;
+          const result=m.swap?toWTL(aS,hS)===('W')?'L':toWTL(aS,hS)==='L'?'W':'T':toWTL(hS,aS);
+          // Correct swap logic:
+          let res;
+          if(!m.swap){res=toWTL(hS,aS);}
+          else{const raw=toWTL(hS,aS);res=raw==='W'?'L':raw==='L'?'W':'T';}
+          updateActual(a=>{if(!a.results)a.results={};a.results[`${m.letter}_${m.mi}`]=res;});
+          n++;
+        });
+        updated=n;
+      }
+      break;
+    }catch(e){continue;}
+  }
+
+  if(updated>0){
+    status.textContent=`✓ Uuendatud ${updated} mängu tulemust`;status.className='fetch-status ok';
+    renderResults();renderGroups();
+  }else{
+    status.textContent='Lõppenud mänge ei leitud (turniir pole alanud või ühendus ebaõnnestus)';
+    status.className='fetch-status info';
+  }
+  btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
+}
+
+async function autoFetchResultsGroups(){
+  const btn=document.getElementById('grp-fetch-btn');
+  const status=document.getElementById('grp-fetch-status');
+  btn.disabled=true;btn.textContent='⏳ Laen...';
+  status.textContent='';status.className='fetch-status info';
+  const lk=buildMatchLookup();
+  let updated=0;
+  const PROXIES=[
+    url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+  const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  const rangeUrl=`${espnBase}?dates=20260611-20260719&limit=200`;
+  for(const proxy of PROXIES){
+    try{
+      const res=await fetch(proxy(rangeUrl),{signal:AbortSignal.timeout(8000)});
+      if(!res.ok)continue;
+      const json=await res.json();
+      const raw=json.contents||json;
+      const data=typeof raw==='string'?JSON.parse(raw):raw;
+      const events=data.events||[];
+      if(events.length){updated=processEvents(events,lk);break;}
+      // fallback: daily
+      const days=Array.from({length:40},(_,i)=>{const d=new Date('2026-06-11');d.setDate(d.getDate()+i);return`${espnBase}?dates=${d.toISOString().slice(0,10).replace(/-/g,'')}`});
+      for(const dayUrl of days){try{const r2=await fetch(proxy(dayUrl),{signal:AbortSignal.timeout(5000)});if(!r2.ok)continue;const j2=await r2.json();const raw2=j2.contents||j2;const d2=typeof raw2==='string'?JSON.parse(raw2):raw2;updated+=processEvents(d2.events||[],lk);}catch{}}
+      break;
+    }catch{continue;}
+  }
+  if(updated>0){status.textContent=`✓ ${updated} mängu uuendatud`;status.className='fetch-status ok';renderGroups();}
+  else{status.textContent='Lõppenud mänge ei leitud';status.className='fetch-status info';}
+  btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
+}
+
+function processEvents(events,lk){
+  let n=0;
+  events.forEach(event=>{
+    const comp=event.competitions?.[0];if(!comp?.status?.type?.completed)return;
+    const home=comp.competitors?.find(c=>c.homeAway==='home');
+    const away=comp.competitors?.find(c=>c.homeAway==='away');
+    if(!home||!away)return;
+    const hN=espnName(home.team?.displayName||''),aN=espnName(away.team?.displayName||'');
+    const hS=parseInt(home.score),aS=parseInt(away.score);if(isNaN(hS)||isNaN(aS))return;
+    const m=lk[`${hN}|${aN}`];if(!m)return;
+    let res;if(!m.swap){res=toWTL(hS,aS);}else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';}
+    updateActual(a=>{if(!a.results)a.results={};a.results[`${m.letter}_${m.mi}`]=res;});n++;
+  });
+  return n;
+}
+
+// ═══════ VIEW PLAYER ═══════
+function viewPlayer(name){
+  const s=getAll(),p=s.preds[name]||freshPreds(),sc=calcScore(p),act=getActual();
+  const champ=p.ko?.final,cnt=countPreds(p),pct=Math.round(cnt/TOTAL_PREDS*100);
+  const finOk=act.ko.final&&champ===act.ko.final;
+  const champBlock=champ?`<div style="background:var(--goldbg);border:1px solid var(--gold);border-radius:8px;padding:12px 16px;margin-bottom:14px;text-align:center">
+    <div style="font-size:22px;margin-bottom:2px">🏆</div>
+    <div style="font-weight:700;color:var(--gold);font-size:15px">${flag(champ)} ${champ}</div>
+    <div style="font-size:11px;color:${finOk?'var(--green3)':'var(--text2)'};margin-top:2px">${finOk?'✓ Õige! +20p':'Maailmameistri ennustus'}</div>
+  </div>`:'';
+  const scoreBlock=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+    ${[['Kokku',sc.total,'var(--gold)'],['Grupp',sc.grp,'var(--text)'],['1/16–1/8',sc.r32+sc.r16,'var(--blue)'],['VF–PF+F',sc.qf+sc.sf+sc.fin,'var(--yellow)']].map(([l,v,c])=>`
+    <div style="background:var(--bg3);border-radius:6px;padding:10px;text-align:center">
+      <div style="font-size:20px;font-weight:800;color:${c}">${v}</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">${l}</div>
+    </div>`).join('')}
+  </div>`;
+  const koRnds=['r32','r16','qf','sf'].map(rnd=>{
+    const ws=(p.ko?.[rnd]||[]).filter(Boolean),aw=act.ko[rnd]||[];if(!ws.length)return'';
+    return`<div style="margin-bottom:10px">
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${RND_NAMES[rnd]} (+${RND_PTS[rnd]}p)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${ws.map((t,i)=>{const ok=aw[i]&&aw[i]===t;
+        return`<span style="background:${ok?'var(--green4)':'var(--bg3)'};border:1px solid ${ok?'var(--green)':'var(--border)'};border-radius:4px;padding:2px 8px;font-size:12px;color:${ok?'var(--green3)':'var(--text)'}">${ok?'✓ ':aw[i]?'✗ ':''}${flag(t)} ${t}</span>`;
+      }).join('')}</div></div>`;
+  }).join('');
+  const gcards=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">${Object.entries(GROUPS).map(([l,t])=>groupCard(l,t,p,true,act)).join('')}</div>`;
+  document.getElementById('modal-title').innerHTML=`${name} &nbsp;<span style="font-size:13px;color:var(--text2);font-weight:400">${sc.total}p · ${pct}% täidetud</span>`;
+  document.getElementById('modal-body').innerHTML=`${champBlock}${scoreBlock}${koRnds}<h4 style="margin:14px 0 10px;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px">Grupiturniir</h4>${gcards}`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
+
+// ═══════ INIT ═══════
+renderLogin();
+</script>
+</body>
+</html>
