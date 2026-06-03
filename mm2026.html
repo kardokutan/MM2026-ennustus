@@ -572,8 +572,19 @@ function groupCard(letter,teams,p,readOnly,act){
 }
 function setResult(letter,mi,val){
   if(locked)return;
-  updateMe(p=>{if(!p.results)p.results={};const k=`${letter}_${mi}`;p.results[k]=p.results[k]===val?null:val;});
-  renderGroups();renderKoRound('r32');updateProgress();
+  updateMe(p=>{
+    if(!p.results)p.results={};
+    const k=`${letter}_${mi}`;
+    p.results[k]=p.results[k]===val?null:val;
+    // Eemalda thirds-ist meeskonnad, kes on nüüd oma grupi top 2-s
+    if(p.thirds&&p.thirds.length>0){
+      const top2=new Set(Object.keys(GROUPS).flatMap(g=>{const st=calcStandings(g,p);return[st[0]?.name,st[1]?.name].filter(Boolean);}));
+      const before=p.thirds.length;
+      p.thirds=p.thirds.filter(t=>!top2.has(t));
+      if(p.thirds.length<before)clearKoFrom(p,'r32');
+    }
+  });
+  renderGroups();renderThirdPlace();renderKoRound('r32');updateProgress();
 }
 
 // ═══════ KNOCKOUT ═══════
