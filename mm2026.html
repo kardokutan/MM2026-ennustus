@@ -1211,7 +1211,8 @@ function adminLogin(){
   const status=document.getElementById('admin-status');
   if(val===ADMIN_PASS){
     sessionStorage.setItem('wc_admin','1');
-    status.textContent='✓ Admin sisse logitud';status.style.color='var(--green3)';
+    setViewerMode(false); // admin = muutmisrežiim, vaaterežiim välja
+    status.textContent='✓ Admin sisse logitud — muutmisrežiim';status.style.color='var(--green3)';
     document.getElementById('admin-pass').value='';
     updateAdminSections();
     renderLogin();
