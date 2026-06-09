@@ -189,6 +189,31 @@ nav{display:flex;gap:2px;flex:1}
 .actual-match select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:7px 10px;outline:none;cursor:pointer}
 .actual-match select:focus{border-color:var(--green)}
 
+/* SCHEDULE */
+.sched-day{margin-bottom:20px}
+.sched-day-hdr{font-size:13px;font-weight:700;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sched-day-hdr span{font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:2px 8px;color:var(--text2)}
+.sched-match{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:5px}
+.sched-match.live{border-color:var(--red);background:#1a0808}
+.sched-match.finished{border-color:#222d22}
+.sched-time{font-size:12px;font-weight:700;color:var(--text2);min-width:40px;text-align:right;flex-shrink:0}
+.sched-time.live-t{color:#f85149;animation:tblink 1.2s infinite}
+@keyframes tblink{0%,100%{opacity:1}50%{opacity:.4}}
+.sched-teams{flex:1;display:flex;align-items:center;gap:6px;min-width:0}
+.sched-team{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sched-team.home{text-align:right}
+.sched-score{font-size:15px;font-weight:800;min-width:54px;text-align:center;flex-shrink:0;background:var(--bg3);border-radius:5px;padding:3px 8px;color:var(--text2)}
+.sched-score.has-score{color:var(--gold)}
+.sched-score.live-s{color:#f85149}
+.sched-grp{font-size:10px;color:var(--text2);min-width:22px;text-align:center;flex-shrink:0}
+.sched-wtl{font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;flex-shrink:0;min-width:20px;text-align:center}
+.sched-wtl.W{background:var(--green4);color:var(--green3);border:1px solid var(--green)}
+.sched-wtl.T{background:var(--yellowbg);color:var(--yellow);border:1px solid var(--yellow)}
+.sched-wtl.L{background:var(--redbg);color:#f85149;border:1px solid var(--red)}
+.btn-fetch-off{background:var(--bg3)!important;color:var(--text2)!important;border:1px solid var(--border)!important;cursor:not-allowed!important;opacity:.55}
+.btn-fetch-on{background:var(--red)!important;color:#fff!important;border:none!important;cursor:pointer!important;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(218,54,51,.4)}70%{box-shadow:0 0 0 6px rgba(218,54,51,0)}}
+
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
 .modal-bg.open{display:flex}
@@ -250,6 +275,10 @@ nav{display:flex;gap:2px;flex:1}
     </div>
     <div id="scores-section" style="display:none">
       <div class="divider">skoorid</div>
+      <div id="viewer-active-note" style="display:none;background:#0d1f0d;border:1px solid var(--green);border-radius:var(--r);padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--green3)">
+        👁 Vaaterežiim on aktiivne — ennustused ja tulemused on kirjutuskaitstud.
+        <button onclick="resetViewerMode()" style="background:none;border:1px solid var(--text2);border-radius:4px;color:var(--text2);cursor:pointer;font-size:11px;padding:2px 8px;margin-left:8px">Lähtesta</button>
+      </div>
       <div class="row">
         <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
           📊 Impordi skoorid
@@ -268,12 +297,14 @@ nav{display:flex;gap:2px;flex:1}
     <nav>
       <button class="nb active" onclick="showTab('groups',this)">Grupiturniir<span class="bdg" id="bdg-g"></span></button>
       <button class="nb" onclick="showTab('knockout',this)">Play-off<span class="bdg" id="bdg-ko"></span></button>
+      <button class="nb" onclick="showTab('schedule',this)">📅 Ajakava</button>
       <button class="nb" onclick="showTab('score',this)">Skoor</button>
       <button class="nb" onclick="showTab('results',this)">Tulemused</button>
     </nav>
     <div class="header-r">
       <span class="chip" id="hchip"></span>
       <span class="lock-badge" id="hlock">🔒 Lukus</span>
+      <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi uued tulemused ESPN-ist">⬇ Laadi tulemused</button>
       <button class="btn btn-s btn-sm" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
       <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
     </div>
@@ -310,6 +341,7 @@ nav{display:flex;gap:2px;flex:1}
 
   <div id="tab-score"   class="tab"><div id="score-content"></div></div>
   <div id="tab-results" class="tab"><div id="results-content"></div></div>
+  <div id="tab-schedule" class="tab"><div id="schedule-content"></div></div>
 </div>
 
 <!-- MODAL -->
@@ -392,7 +424,9 @@ const RND_PTS   = {r32:3, r16:5, qf:8, sf:10, final:20};
 const TOTAL_PREDS = 112;
 
 // ═══════ STATE ═══════
-let me = null, locked = false;
+let me = null, locked = false, viewerMode = false;
+function isViewerMode(){return viewerMode||localStorage.getItem('wc2026_viewer')==='1';}
+function setViewerMode(on){viewerMode=on;if(on)localStorage.setItem('wc2026_viewer','1');else localStorage.removeItem('wc2026_viewer');}
 
 function getAll(){
   try{return JSON.parse(localStorage.getItem('wc2026'))||{players:[],preds:{},actual:freshActual()};}
@@ -498,12 +532,19 @@ function addPlayer(){
   inp.value='';login(name);
 }
 function login(name){
-  me=name;locked=new Date()>=TOURNAMENT_START;
+  me=name;locked=new Date()>=TOURNAMENT_START||isViewerMode();
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('hchip').textContent=name;
-  document.getElementById('hlock').style.display=locked?'inline':'none';
+  document.getElementById('hlock').style.display=(locked||isViewerMode())?'inline':'none';
+  if(isViewerMode())document.getElementById('hlock').textContent='👁 Vaaterežiim';
   renderAll();
+  updateFetchBtn();
+  // If viewer mode, go straight to score tab
+  if(isViewerMode()){
+    const scoreBtn=document.querySelector('.nb[onclick*="score"]');
+    if(scoreBtn)showTab('score',scoreBtn);
+  }
 }
 function logout(){
   me=null;
@@ -518,7 +559,9 @@ function showTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');
-  if(name==='score')renderScore();if(name==='results')renderResults();
+  if(name==='score')renderScore();
+  if(name==='results')renderResults();
+  if(name==='schedule')renderSchedule();
 }
 function showKo(round,btn){
   document.querySelectorAll('.kround').forEach(r=>r.classList.remove('active'));
@@ -571,7 +614,7 @@ function groupCard(letter,teams,p,readOnly,act){
   </div>`;
 }
 function setResult(letter,mi,val){
-  if(locked)return;
+  if(locked||isViewerMode())return;
   updateMe(p=>{
     if(!p.results)p.results={};
     const k=`${letter}_${mi}`;
@@ -610,7 +653,7 @@ function renderThirdPlace(){
     <div class="tpgrid">${items}</div></div>`;
 }
 function toggleThird(team){
-  if(locked)return;
+  if(locked||isViewerMode())return;
   updateMe(p=>{if(!p.thirds)p.thirds=[];const i=p.thirds.indexOf(team);
     if(i>=0){p.thirds.splice(i,1);clearKoFrom(p,'r32');}else if(p.thirds.length<8)p.thirds.push(team);});
   renderThirdPlace();renderKoRound('r32');updateProgress();
@@ -629,8 +672,8 @@ function renderKoRound(round){
     const aW=w&&w===tA&&!isSlot(tA),bW=w&&w===tB&&!isSlot(tB);
     const correct=aw&&w===aw,hasResult=!!aw;
     const ptsBadge=hasResult?`<span class="pts-badge ${correct?'pts-ok':'pts-none'}">${correct?'+'+pts+'p':'0p'}</span>`:'';
-    const clkA=(!locked&&tA&&!isSlot(tA))?`onclick="pickKo('${round}',${mi},'${esc(tA)}')"`:'' ;
-    const clkB=(!locked&&tB&&!isSlot(tB))?`onclick="pickKo('${round}',${mi},'${esc(tB)}')"`:'' ;
+    const clkA=(!locked&&!isViewerMode()&&tA&&!isSlot(tA))?`onclick="pickKo('${round}',${mi},'${esc(tA)}')"`:'' ;
+    const clkB=(!locked&&!isViewerMode()&&tB&&!isSlot(tB))?`onclick="pickKo('${round}',${mi},'${esc(tB)}')"`:'' ;
     const btnA=tA&&!isSlot(tA)?`<button class="koteam ${aW?'winner':w?'loser':''}" ${clkA}>${aW?'🏆 ':''}${flag(tA)} ${tA}</button>`
       :`<button class="koteam tbd" disabled>${tA||'Määramata'}</button>`;
     const btnB=tB&&!isSlot(tB)?`<button class="koteam ${bW?'winner':w?'loser':''}" ${clkB}>${bW?'🏆 ':''}${flag(tB)} ${tB}</button>`
@@ -641,7 +684,7 @@ function renderKoRound(round){
   document.getElementById('ko-'+round).innerHTML=info+`<div class="ko-grid">${cards}</div>`;
 }
 function pickKo(round,mi,team){
-  if(locked)return;
+  if(locked||isViewerMode())return;
   updateMe(p=>{if(!p.ko[round])p.ko[round]=[];const same=p.ko[round][mi]===team;
     p.ko[round][mi]=same?null:team;if(!same)clearKoDownstream(p,round,mi);});
   renderKoRound(round);const nxt={r32:'r16',r16:'qf',qf:'sf',sf:'final'}[round];
@@ -664,7 +707,7 @@ function renderFinal(){
   const sfL0=sf0.find(t=>t&&!isSlot(t)&&t!==f1),sfL1=sf1.find(t=>t&&!isSlot(t)&&t!==f2);
   const mkBtn=(team,winner,fn,gold=false)=>{
     if(!team||isSlot(team))return`<button class="koteam tbd" disabled>${team||'Määramata'}</button>`;
-    const isW=winner===team,click=!locked?`onclick="${fn}('${esc(team)}')"`:'' ;
+    const isW=winner===team,click=(!locked&&!isViewerMode())?`onclick="${fn}('${esc(team)}')"`:'' ;
     return`<button class="koteam ${isW?(gold?'gold-win':'winner'):winner?'loser':''}" ${click}>${isW?(gold?'🏆 ':'🥉 '):''}${flag(team)} ${team}</button>`;
   };
   const finPts=actFin&&champ===actFin;
@@ -689,8 +732,8 @@ function renderFinal(){
     ${!f1||!f2?`<div class="ko-info" style="margin-top:10px">⚠️ <strong>Täida poolfinaalid</strong></div>`:''}
   </div>`;
 }
-function pickTP(team){if(locked)return;updateMe(p=>{p.ko.tp=p.ko.tp===team?null:team;});renderFinal();updateProgress();}
-function pickFinal(team){if(locked)return;updateMe(p=>{p.ko.final=p.ko.final===team?null:team;});renderFinal();updateProgress();}
+function pickTP(team){if(locked||isViewerMode())return;updateMe(p=>{p.ko.tp=p.ko.tp===team?null:team;});renderFinal();updateProgress();}
+function pickFinal(team){if(locked||isViewerMode())return;updateMe(p=>{p.ko.final=p.ko.final===team?null:team;});renderFinal();updateProgress();}
 
 // ═══════ SCORE TAB ═══════
 function renderScore(){
@@ -808,20 +851,19 @@ function renderPredsSummary(s){
 
 // ═══════ RESULTS TAB ═══════
 function renderResults(){
-  const act=getActual(),admin=isAdmin();
-  const adminBar='';
+  const act=getActual(),admin=isAdmin(),viewer=isViewerMode();
+  const canEdit=admin&&!viewer;
   const groupsHtml=`<div class="results-section">
     <h3>Grupiturniir <span class="rtag">+1 punkt iga õige W/T/L eest</span></h3>
     <p style="color:var(--text2);font-size:12px;margin-bottom:12px"><strong>W</strong> = kodumeeskond võidab &nbsp; <strong>T</strong> = viik &nbsp; <strong>L</strong> = külaline võidab</p>
-    <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act,admin)).join('')}</div>
+    <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act,canEdit)).join('')}</div>
   </div>`;
-  const viewNote=!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:'';
+  const viewNote=viewer?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaaterežiim — tulemused on kirjutuskaitstud. Skoorid uuendatakse automaatselt kui admin saadab uue faili.</div>`:(!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:``);
   document.getElementById('results-content').innerHTML=`
     ${viewNote}
-    ${adminBar}
     ${groupsHtml}
     ${renderActualStandings(act)}
-    ${renderActualKo(act,admin)}`;
+    ${renderActualKo(act,canEdit)}`;
 }
 function actualGroupCard(letter,teams,act,admin){
   const scoreInp=(key,side,val)=>admin
@@ -861,11 +903,13 @@ function setActualScore(letter,mi,side,val){
       a.results[key]=toWTL(sc.h,sc.a);
     }
   });
-  renderResults();renderGroups();
+  renderResults();renderGroups();updateFetchBtn();
+  if(document.getElementById('tab-schedule')&&document.getElementById('tab-schedule').classList.contains('active'))renderSchedule();
 }
 function setActualResult(letter,mi,val){
   updateActual(a=>{if(!a.results)a.results={};const k=`${letter}_${mi}`;a.results[k]=a.results[k]===val?null:val;});
-  renderResults();renderGroups();
+  renderResults();renderGroups();updateFetchBtn();
+  if(document.getElementById('tab-schedule')&&document.getElementById('tab-schedule').classList.contains('active'))renderSchedule();
 }
 function calcStandingsFull(letter,act){
   const teams=GROUPS[letter],st=teams.map(t=>({name:t,mp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
@@ -1179,6 +1223,26 @@ function updateAdminSections(){
   const admin=isAdmin();
   document.getElementById('admin-section').style.display=admin?'block':'none';
   document.getElementById('scores-section').style.display=admin?'none':'block';
+  const note=document.getElementById('viewer-active-note');
+  if(note)note.style.display=isViewerMode()&&!admin?'block':'none';
+  if(isViewerMode()&&!admin){
+    const dividers=document.querySelectorAll('#scores-section .divider');
+    if(dividers[0])dividers[0].textContent='skoorid (vaaterežiim)';
+  }
+}
+function resetViewerMode(){
+  if(!confirm('Lähtesta vaaterežiim? Sinu enda ennustused säilivad, aga teiste andmed eemaldatakse.'))return;
+  setViewerMode(false);
+  // Remove other players' data, keep only own
+  const s=getAll();
+  if(me){
+    const myPred=s.preds[me];
+    s.players=[me];
+    s.preds={[me]:myPred};
+    s.actual=freshActual();
+    saveAll(s);
+  }
+  renderLogin();
 }
 function deletePlayer(name){
   if(!isAdmin())return;
@@ -1243,7 +1307,7 @@ async function adminFetchResults(){
       break;
     }catch{continue;}
   }
-  if(updated>0){status.textContent=`✓ ${updated} mängu uuendatud`;status.style.color='var(--green3)';}
+  if(updated>0){status.textContent=`✓ ${updated} mängu uuendatud`;status.style.color='var(--green3)';updateFetchBtn();renderGroups();}
   else{status.textContent='Lõppenud mänge ei leitud';status.style.color='var(--text2)';}
   btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
 }
@@ -1272,12 +1336,285 @@ function importScores(event){
       // merge actual results
       if(data.actual)s.actual=data.actual;
       saveAll(s);
-      status.textContent=`✓ Skoorid uuendatud — ${data.players.length} mängijat`;status.style.color='var(--green3)';
+      // Activate viewer mode - locks predictions & results editing
+      setViewerMode(true);
+      status.textContent=`✓ Skoorid uuendatud — ${data.players.length} mängijat · Vaaterežiim aktiveeritud`;status.style.color='var(--green3)';
       renderLogin();
     }catch{status.textContent='❌ Faili lugemine ebaõnnestus';status.style.color='var(--red)';}
   };
   reader.readAsText(file);
   event.target.value='';
+}
+
+// ═══════ SCHEDULE DATA ═══════
+// All group stage matches with UTC times (Eesti suveaeg = UTC+3)
+// Format: [group, matchIndex, dateUTC, timeUTC, venue, city]
+const SCHEDULE = [
+  // Päev 1 - 11. juuni
+  ['A',0,'2026-06-11','20:00','Estadio Azteca','Mexico City'],
+  ['B',0,'2026-06-11','23:00','BMO Field','Toronto'],
+  // Päev 2 - 12. juuni
+  ['C',0,'2026-06-12','00:00','SoFi Stadium','Los Angeles'],
+  ['D',0,'2026-06-12','20:00','MetLife Stadium','New York'],
+  ['E',0,'2026-06-12','23:00','AT&T Stadium','Dallas'],
+  // Päev 3 - 13. juuni
+  ['F',0,'2026-06-13','00:00','Levi\'s Stadium','San Jose'],
+  ['A',1,'2026-06-13','20:00','Estadio BBVA','Monterrey'],
+  ['G',0,'2026-06-13','23:00','Hard Rock Stadium','Miami'],
+  // Päev 4 - 14. juuni
+  ['H',0,'2026-06-14','00:00','Rose Bowl','Los Angeles'],
+  ['B',1,'2026-06-14','20:00','BC Place','Vancouver'],
+  ['I',0,'2026-06-14','23:00','Mercedes-Benz Stadium','Atlanta'],
+  // Päev 5 - 15. juuni
+  ['J',0,'2026-06-15','00:00','Arrowhead Stadium','Kansas City'],
+  ['C',1,'2026-06-15','20:00','Estadio Akron','Guadalajara'],
+  ['K',0,'2026-06-15','23:00','Gillette Stadium','Boston'],
+  // Päev 6 - 16. juuni
+  ['L',0,'2026-06-16','00:00','Lumen Field','Seattle'],
+  ['D',1,'2026-06-16','20:00','MetLife Stadium','New York'],
+  ['E',1,'2026-06-16','23:00','NRG Stadium','Houston'],
+  // Päev 7 - 17. juuni
+  ['F',1,'2026-06-17','00:00','SoFi Stadium','Los Angeles'],
+  ['G',1,'2026-06-17','20:00','Hard Rock Stadium','Miami'],
+  ['H',1,'2026-06-17','23:00','AT&T Stadium','Dallas'],
+  // Päev 8 - 18. juuni
+  ['I',1,'2026-06-18','00:00','Mercedes-Benz Stadium','Atlanta'],
+  ['J',1,'2026-06-18','20:00','Estadio Azteca','Mexico City'],
+  ['K',1,'2026-06-18','23:00','BC Place','Vancouver'],
+  // Päev 9 - 19. juuni
+  ['L',1,'2026-06-19','00:00','Levi\'s Stadium','San Jose'],
+  ['A',2,'2026-06-19','20:00','Estadio Azteca','Mexico City'],
+  ['B',2,'2026-06-19','23:00','BMO Field','Toronto'],
+  // Päev 10 - 20. juuni
+  ['C',2,'2026-06-20','00:00','Rose Bowl','Los Angeles'],
+  ['D',2,'2026-06-20','20:00','AT&T Stadium','Dallas'],
+  ['E',2,'2026-06-20','23:00','Arrowhead Stadium','Kansas City'],
+  // Päev 11 - 21. juuni
+  ['F',2,'2026-06-21','00:00','Lumen Field','Seattle'],
+  ['G',2,'2026-06-21','20:00','MetLife Stadium','New York'],
+  ['H',2,'2026-06-21','23:00','Estadio BBVA','Monterrey'],
+  // Päev 12 - 22. juuni
+  ['I',2,'2026-06-22','00:00','Gillette Stadium','Boston'],
+  ['J',2,'2026-06-22','20:00','Estadio Akron','Guadalajara'],
+  ['K',2,'2026-06-22','23:00','NRG Stadium','Houston'],
+  // Päev 13 - 23. juuni
+  ['L',2,'2026-06-23','00:00','SoFi Stadium','Los Angeles'],
+  ['A',3,'2026-06-23','20:00','Estadio BBVA','Monterrey'],
+  ['B',3,'2026-06-23','23:00','BC Place','Vancouver'],
+  // Päev 14 - 24. juuni
+  ['C',3,'2026-06-24','00:00','Estadio Akron','Guadalajara'],
+  ['D',3,'2026-06-24','20:00','Lumen Field','Seattle'],
+  ['E',3,'2026-06-24','23:00','Mercedes-Benz Stadium','Atlanta'],
+  // Päev 15 - 25. juuni
+  ['F',3,'2026-06-25','00:00','Hard Rock Stadium','Miami'],
+  ['G',3,'2026-06-25','20:00','AT&T Stadium','Dallas'],
+  ['H',3,'2026-06-25','23:00','Rose Bowl','Los Angeles'],
+  // Päev 16 - 26. juuni
+  ['I',3,'2026-06-26','00:00','Arrowhead Stadium','Kansas City'],
+  ['J',3,'2026-06-26','20:00','Estadio Azteca','Mexico City'],
+  ['K',3,'2026-06-26','23:00','Gillette Stadium','Boston'],
+  // Päev 17 - 27. juuni
+  ['L',3,'2026-06-27','00:00','NRG Stadium','Houston'],
+  ['A',4,'2026-06-27','20:00','Estadio Azteca','Mexico City'],
+  ['A',5,'2026-06-27','20:00','Estadio BBVA','Monterrey'],
+  // Päev 18 - 28. juuni
+  ['B',4,'2026-06-28','20:00','BMO Field','Toronto'],
+  ['B',5,'2026-06-28','20:00','BC Place','Vancouver'],
+  ['C',4,'2026-06-28','23:00','SoFi Stadium','Los Angeles'],
+  // Päev 19 - 29. juuni
+  ['C',5,'2026-06-29','00:00','Rose Bowl','Los Angeles'],
+  ['D',4,'2026-06-29','20:00','MetLife Stadium','New York'],
+  ['D',5,'2026-06-29','20:00','AT&T Stadium','Dallas'],
+  // Päev 20 - 30. juuni
+  ['E',4,'2026-06-30','20:00','Arrowhead Stadium','Kansas City'],
+  ['E',5,'2026-06-30','20:00','NRG Stadium','Houston'],
+  ['F',4,'2026-06-30','23:00','Levi\'s Stadium','San Jose'],
+  // Päev 21 - 1. juuli
+  ['F',5,'2026-07-01','00:00','Lumen Field','Seattle'],
+  ['G',4,'2026-07-01','20:00','Hard Rock Stadium','Miami'],
+  ['G',5,'2026-07-01','20:00','Mercedes-Benz Stadium','Atlanta'],
+  // Päev 22 - 2. juuli
+  ['H',4,'2026-07-02','20:00','Estadio Akron','Guadalajara'],
+  ['H',5,'2026-07-02','20:00','Estadio BBVA','Monterrey'],
+  ['I',4,'2026-07-02','23:00','Gillette Stadium','Boston'],
+  // Päev 23 - 3. juuli
+  ['I',5,'2026-07-03','00:00','Mercedes-Benz Stadium','Atlanta'],
+  ['J',4,'2026-07-03','20:00','Estadio Azteca','Mexico City'],
+  ['J',5,'2026-07-03','20:00','Estadio Akron','Guadalajara'],
+  // Päev 24 - 4. juuli
+  ['K',4,'2026-07-04','20:00','MetLife Stadium','New York'],
+  ['K',5,'2026-07-04','20:00','AT&T Stadium','Dallas'],
+  ['L',4,'2026-07-04','23:00','SoFi Stadium','Los Angeles'],
+  // Päev 25 - 5. juuli
+  ['L',5,'2026-07-05','00:00','Rose Bowl','Los Angeles'],
+];
+
+// Convert UTC datetime to Estonian time string (UTC+3 in summer)
+function toEeTime(dateStr, timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const utc = new Date(`${dateStr}T${timeStr}:00Z`);
+  // Estonia is UTC+3 in summer (EEST)
+  const ee = new Date(utc.getTime() + 3 * 3600000);
+  const hh = String(ee.getUTCHours()).padStart(2,'0');
+  const mm = String(ee.getUTCMinutes()).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
+
+function toEeDate(dateStr, timeStr) {
+  const utc = new Date(`${dateStr}T${timeStr}:00Z`);
+  const ee = new Date(utc.getTime() + 3 * 3600000);
+  return ee.toISOString().slice(0,10);
+}
+
+const EE_MONTHS = ['jaan','veebr','märts','apr','mai','juuni','juuli','aug','sept','okt','nov','dets'];
+const EE_DAYS = ['P','E','T','K','N','R','L'];
+
+function formatEeDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const day = EE_DAYS[d.getUTCDay()];
+  const dd = d.getUTCDate();
+  const mon = EE_MONTHS[d.getUTCMonth()];
+  return `${day} ${dd}. ${mon}`;
+}
+
+function renderSchedule() {
+  const act = getActual();
+  const now = new Date();
+
+  // Group matches by Estonian date
+  const byDay = {};
+  SCHEDULE.forEach(([grp, mi, dateUTC, timeUTC, venue, city]) => {
+    const eeDate = toEeDate(dateUTC, timeUTC);
+    const eeTime = toEeTime(dateUTC, timeUTC);
+    const teams = GROUPS[grp];
+    const [hi, ai] = GM[mi];
+    const key = `${grp}_${mi}`;
+    const result = act.results && act.results[key];
+    const scores = act.scores && act.scores[key];
+    // match time in ms
+    const matchUtc = new Date(`${dateUTC}T${timeUTC}:00Z`).getTime();
+    const isLive = now.getTime() > matchUtc && now.getTime() < matchUtc + 110*60000;
+    const isDone = !!result;
+
+    if (!byDay[eeDate]) byDay[eeDate] = [];
+    byDay[eeDate].push({grp, mi, eeTime, teams, hi, ai, key, result, scores, isLive, isDone, venue, city, matchUtc});
+  });
+
+  const sortedDates = Object.keys(byDay).sort();
+  let html = '';
+
+  // Find today/next upcoming date to highlight
+  const todayStr = new Date(now.getTime() + 3*3600000).toISOString().slice(0,10);
+
+  sortedDates.forEach(dateStr => {
+    const matches = byDay[dateStr];
+    const isToday = dateStr === todayStr;
+    const matchCount = matches.length;
+    const doneCount = matches.filter(m => m.isDone).length;
+
+    html += `<div class="sched-day">
+      <div class="sched-day-hdr">
+        ${isToday ? '📍 ' : ''}${formatEeDate(dateStr)}
+        <span>${doneCount > 0 ? `${doneCount}/${matchCount} peetud` : `${matchCount} mängu`}</span>
+        ${isToday ? '<span style="background:#1a3a1a;border-color:var(--green);color:var(--green3)">Täna</span>' : ''}
+      </div>`;
+
+    matches.forEach(({grp, mi, eeTime, teams, hi, ai, key, result, scores, isLive, isDone, venue, city}) => {
+      const home = teams[hi], away = teams[ai];
+      const cls = isLive ? 'live' : isDone ? 'finished' : '';
+      const timeCls = isLive ? 'live-t' : '';
+      const timeLabel = isLive ? '⚽ LIVE' : eeTime;
+
+      let scoreHtml = '';
+      if (scores && scores.h !== null && scores.a !== null) {
+        scoreHtml = `<div class="sched-score has-score">${scores.h} : ${scores.a}</div>`;
+      } else if (isLive) {
+        scoreHtml = `<div class="sched-score live-s">? : ?</div>`;
+      } else {
+        scoreHtml = `<div class="sched-score">vs</div>`;
+      }
+
+      const wtlHtml = result ? `<div class="sched-wtl ${result}">${result}</div>` : `<div class="sched-wtl" style="min-width:20px"></div>`;
+
+      html += `<div class="sched-match ${cls}" title="${venue}, ${city}">
+        <div class="sched-grp">G${grp}</div>
+        <div class="sched-time ${timeCls}">${timeLabel}</div>
+        <div class="sched-teams">
+          <span class="sched-team home">${flag(home)} ${home}</span>
+          ${scoreHtml}
+          <span class="sched-team">${away} ${flag(away)}</span>
+        </div>
+        ${wtlHtml}
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  document.getElementById('schedule-content').innerHTML =
+    `<h2 style="margin-bottom:16px;font-size:17px">📅 Ajakava <span style="font-size:12px;font-weight:400;color:var(--text2)">— ajad Eesti aja järgi (EEST UTC+3)</span></h2>${html}`;
+}
+
+// ═══════ HEADER FETCH BUTTON ═══════
+function updateFetchBtn() {
+  const btn = document.getElementById('hdr-fetch-btn');
+  if (!btn) return;
+  btn.style.display = 'inline-block';
+
+  // Check if there are finished matches without results
+  const now = new Date();
+  const act = getActual();
+  let hasPending = false;
+  SCHEDULE.forEach(([grp, mi, dateUTC, timeUTC]) => {
+    const matchEnd = new Date(`${dateUTC}T${timeUTC}:00Z`).getTime() + 110*60000;
+    if (now.getTime() > matchEnd) {
+      const key = `${grp}_${mi}`;
+      if (!act.results || !act.results[key]) hasPending = true;
+    }
+  });
+
+  if (hasPending) {
+    btn.className = 'btn btn-sm btn-fetch-on';
+    btn.textContent = '⬇ Laadi tulemused';
+    btn.disabled = false;
+    btn.title = 'Lõppenud mängude tulemused pole veel laaditud!';
+  } else {
+    btn.className = 'btn btn-sm btn-fetch-off';
+    btn.textContent = '✓ Tulemused ajakohased';
+    btn.disabled = true;
+    btn.title = 'Kõik lõppenud mängude tulemused on olemas';
+  }
+}
+
+async function headerFetchResults() {
+  const btn = document.getElementById('hdr-fetch-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Laen...';
+  btn.className = 'btn btn-sm btn-s';
+
+  const lk = buildMatchLookup(); let updated = 0;
+  const PROXIES = [url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`];
+  const espnBase = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(`${espnBase}?dates=20260611-20260719&limit=200`), {signal:AbortSignal.timeout(8000)});
+      if (!res.ok) continue;
+      const json = await res.json(); const raw = json.contents||json;
+      const data = typeof raw==='string' ? JSON.parse(raw) : raw;
+      const events = data.events||[];
+      if (events.length) { updated = processEvents(events, lk); break; }
+    } catch { continue; }
+  }
+
+  if (updated > 0) {
+    btn.textContent = `✓ ${updated} uuendatud`;
+    btn.className = 'btn btn-sm btn-s';
+    setTimeout(()=>{ updateFetchBtn(); renderGroups(); if(document.getElementById('tab-schedule').classList.contains('active')) renderSchedule(); }, 1500);
+  } else {
+    btn.textContent = '— Ei leitud';
+    btn.className = 'btn btn-sm btn-s';
+    setTimeout(updateFetchBtn, 2000);
+  }
 }
 
 // ═══════ INIT ═══════
