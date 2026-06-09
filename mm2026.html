@@ -852,13 +852,13 @@ function renderPredsSummary(s){
 // ═══════ RESULTS TAB ═══════
 function renderResults(){
   const act=getActual(),admin=isAdmin(),viewer=isViewerMode();
-  const canEdit=admin&&!viewer;
+  const canEdit=admin; // admin saab ALATI muuta, sõltumata vaaterežiimist
   const groupsHtml=`<div class="results-section">
     <h3>Grupiturniir <span class="rtag">+1 punkt iga õige W/T/L eest</span></h3>
     <p style="color:var(--text2);font-size:12px;margin-bottom:12px"><strong>W</strong> = kodumeeskond võidab &nbsp; <strong>T</strong> = viik &nbsp; <strong>L</strong> = külaline võidab</p>
     <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act,canEdit)).join('')}</div>
   </div>`;
-  const viewNote=viewer?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaaterežiim — tulemused on kirjutuskaitstud. Skoorid uuendatakse automaatselt kui admin saadab uue faili.</div>`:(!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:``);
+  const viewNote=viewer&&!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaaterežiim — tulemused on kirjutuskaitstud. Skoorid uuendatakse automaatselt kui admin saadab uue faili.</div>`:(!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:``);
   document.getElementById('results-content').innerHTML=`
     ${viewNote}
     ${groupsHtml}
