@@ -231,7 +231,7 @@ nav{display:flex;gap:2px;flex:1}
   .logo{font-size:13px}
   .nb{padding:5px 6px;font-size:11px}
   .nb .bdg{display:none}
-  .header-r .btn{display:none}
+  .header-r .btn:not(.btn-export){display:none}
 }
 </style>
 </head>
@@ -305,7 +305,7 @@ nav{display:flex;gap:2px;flex:1}
       <span class="chip" id="hchip"></span>
       <span class="lock-badge" id="hlock">🔒 Lukus</span>
       <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi uued tulemused ESPN-ist">⬇ Laadi tulemused</button>
-      <button class="btn btn-s btn-sm" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
+      <button class="btn btn-s btn-sm btn-export" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
       <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
     </div>
   </header>
