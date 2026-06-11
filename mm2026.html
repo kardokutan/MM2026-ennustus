@@ -231,7 +231,7 @@ nav{display:flex;gap:2px;flex:1}
   .logo{font-size:13px}
   .nb{padding:5px 6px;font-size:11px}
   .nb .bdg{display:none}
-  .header-r .btn:not(.btn-export){display:none}
+  .header-r .btn{display:none}
 }
 </style>
 </head>
@@ -304,8 +304,8 @@ nav{display:flex;gap:2px;flex:1}
     <div class="header-r">
       <span class="chip" id="hchip"></span>
       <span class="lock-badge" id="hlock">🔒 Lukus</span>
-      <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi uued tulemused ESPN-ist">⬇ Laadi tulemused</button>
-      <button class="btn btn-s btn-sm btn-export" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
+      <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi uued tulemused FIFA World Cup andmevoost">⬇ Laadi tulemused</button>
+      <button class="btn btn-s btn-sm" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
       <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
     </div>
   </header>
@@ -357,20 +357,20 @@ nav{display:flex;gap:2px;flex:1}
 
 <script>
 // ═══════ CONSTANTS ═══════
-const TOURNAMENT_START = new Date('2026-06-11T20:00:00Z'); // Esimene mäng: Mehhiko vs Lõuna-Korea kell 23:00 EEST
+const TOURNAMENT_START = new Date('2026-06-11T12:00:00');
 
 const GROUPS = {
-  A:['Mehhiko','Lõuna-Korea','Lõuna-Aafrika','Tšehhi'],
-  B:['Kanada','Šveits','Bosnia-Herzegovina','Katar'],
+  A:['Mehhiko','Lõuna-Aafrika','Lõuna-Korea','Tšehhi'],
+  B:['Kanada','Bosnia-Herzegovina','Katar','Šveits'],
   C:['Brasiilia','Maroko','Haiti','Šotimaa'],
-  D:['USA','Türgi','Paraguay','Austraalia'],
-  E:['Saksamaa','Elevandiluurannik','Ecuador','Curaçao'],
+  D:['USA','Paraguay','Austraalia','Türgi'],
+  E:['Saksamaa','Curaçao','Elevandiluurannik','Ecuador'],
   F:['Holland','Jaapan','Rootsi','Tuneesia'],
-  G:['Belgia','Iraan','Egiptus','Uus-Meremaa'],
-  H:['Hispaania','Uruguay','Saudi Araabia','Roheneemesaared'],
-  I:['Prantsusmaa','Senegal','Norra','Iraak'],
+  G:['Belgia','Egiptus','Iraan','Uus-Meremaa'],
+  H:['Hispaania','Roheneemesaared','Saudi Araabia','Uruguay'],
+  I:['Prantsusmaa','Senegal','Iraak','Norra'],
   J:['Argentina','Alžeeria','Austria','Jordaania'],
-  K:['Portugal','Colombia','DR Kongo','Usbekistan'],
+  K:['Portugal','DR Kongo','Usbekistan','Colombia'],
   L:['Inglismaa','Horvaatia','Ghana','Panama'],
 };
 
@@ -510,7 +510,7 @@ function renderLogin(){
   const s=getAll(),now=new Date(),diff=TOURNAMENT_START-now;
   const cdown=document.getElementById('cdown');
   if(diff>0){const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000);
-    cdown.textContent=`⏰ Esimene mäng algab ${d} päeva ja ${h} tunni pärast`;cdown.className='cdown-box cdown-open';}
+    cdown.textContent=`⏰ Turniir algab ${d} päeva ja ${h} tunni pärast`;cdown.className='cdown-box cdown-open';}
   else{cdown.textContent='🔒 Turniir on käimas – ennustused lukustatud';cdown.className='cdown-box cdown-locked';}
   const list=document.getElementById('player-list');
   if(!s.players.length){list.innerHTML='<p style="color:var(--text2);font-size:12px;text-align:center;padding:6px">Mängijaid pole veel lisatud</p>';return;}
@@ -1018,7 +1018,7 @@ async function autoFetchResults(){
   const btn=document.getElementById('auto-fetch-btn');
   const status=document.getElementById('fetch-status');
   btn.disabled=true;btn.textContent='⏳ Laen...';
-  status.textContent='Ühendan ESPN-iga...';status.className='fetch-status info';
+  status.textContent='Ühendan FIFA World Cup andmevooga...';status.className='fetch-status info';
 
   const lk=buildMatchLookup();
   let updated=0,checked=0;
@@ -1291,7 +1291,7 @@ async function adminFetchResults(){
   const btn=document.getElementById('login-fetch-btn');
   const status=document.getElementById('login-fetch-status');
   btn.disabled=true;btn.textContent='⏳ Laen...';
-  status.textContent='Ühendan ESPN-iga...';status.style.color='var(--text2)';
+  status.textContent='Ühendan FIFA World Cup andmevooga...';status.style.color='var(--text2)';
   const lk=buildMatchLookup();let updated=0;
   const PROXIES=[url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,url=>`https://corsproxy.io/?${encodeURIComponent(url)}`];
   const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
@@ -1351,103 +1351,80 @@ function importScores(event){
 // All group stage matches with UTC times (Eesti suveaeg = UTC+3)
 // Format: [group, matchIndex, dateUTC, timeUTC, venue, city]
 const SCHEDULE = [
-  // Päev 1 - 11. juuni
-  ['A',0,'2026-06-11','20:00','Estadio Azteca','Mexico City'],
-  ['B',0,'2026-06-11','23:00','BMO Field','Toronto'],
-  // Päev 2 - 12. juuni
-  ['C',0,'2026-06-12','00:00','SoFi Stadium','Los Angeles'],
-  ['D',0,'2026-06-12','20:00','MetLife Stadium','New York'],
-  ['E',0,'2026-06-12','23:00','AT&T Stadium','Dallas'],
-  // Päev 3 - 13. juuni
-  ['F',0,'2026-06-13','00:00','Levi\'s Stadium','San Jose'],
-  ['A',1,'2026-06-13','20:00','Estadio BBVA','Monterrey'],
-  ['G',0,'2026-06-13','23:00','Hard Rock Stadium','Miami'],
-  // Päev 4 - 14. juuni
-  ['H',0,'2026-06-14','00:00','Rose Bowl','Los Angeles'],
-  ['B',1,'2026-06-14','20:00','BC Place','Vancouver'],
-  ['I',0,'2026-06-14','23:00','Mercedes-Benz Stadium','Atlanta'],
-  // Päev 5 - 15. juuni
-  ['J',0,'2026-06-15','00:00','Arrowhead Stadium','Kansas City'],
-  ['C',1,'2026-06-15','20:00','Estadio Akron','Guadalajara'],
-  ['K',0,'2026-06-15','23:00','Gillette Stadium','Boston'],
-  // Päev 6 - 16. juuni
-  ['L',0,'2026-06-16','00:00','Lumen Field','Seattle'],
-  ['D',1,'2026-06-16','20:00','MetLife Stadium','New York'],
-  ['E',1,'2026-06-16','23:00','NRG Stadium','Houston'],
-  // Päev 7 - 17. juuni
-  ['F',1,'2026-06-17','00:00','SoFi Stadium','Los Angeles'],
-  ['G',1,'2026-06-17','20:00','Hard Rock Stadium','Miami'],
-  ['H',1,'2026-06-17','23:00','AT&T Stadium','Dallas'],
-  // Päev 8 - 18. juuni
-  ['I',1,'2026-06-18','00:00','Mercedes-Benz Stadium','Atlanta'],
-  ['J',1,'2026-06-18','20:00','Estadio Azteca','Mexico City'],
-  ['K',1,'2026-06-18','23:00','BC Place','Vancouver'],
-  // Päev 9 - 19. juuni
-  ['L',1,'2026-06-19','00:00','Levi\'s Stadium','San Jose'],
-  ['A',2,'2026-06-19','20:00','Estadio Azteca','Mexico City'],
-  ['B',2,'2026-06-19','23:00','BMO Field','Toronto'],
-  // Päev 10 - 20. juuni
-  ['C',2,'2026-06-20','00:00','Rose Bowl','Los Angeles'],
-  ['D',2,'2026-06-20','20:00','AT&T Stadium','Dallas'],
-  ['E',2,'2026-06-20','23:00','Arrowhead Stadium','Kansas City'],
-  // Päev 11 - 21. juuni
-  ['F',2,'2026-06-21','00:00','Lumen Field','Seattle'],
-  ['G',2,'2026-06-21','20:00','MetLife Stadium','New York'],
-  ['H',2,'2026-06-21','23:00','Estadio BBVA','Monterrey'],
-  // Päev 12 - 22. juuni
-  ['I',2,'2026-06-22','00:00','Gillette Stadium','Boston'],
-  ['J',2,'2026-06-22','20:00','Estadio Akron','Guadalajara'],
-  ['K',2,'2026-06-22','23:00','NRG Stadium','Houston'],
-  // Päev 13 - 23. juuni
-  ['L',2,'2026-06-23','00:00','SoFi Stadium','Los Angeles'],
-  ['A',3,'2026-06-23','20:00','Estadio BBVA','Monterrey'],
-  ['B',3,'2026-06-23','23:00','BC Place','Vancouver'],
-  // Päev 14 - 24. juuni
-  ['C',3,'2026-06-24','00:00','Estadio Akron','Guadalajara'],
-  ['D',3,'2026-06-24','20:00','Lumen Field','Seattle'],
-  ['E',3,'2026-06-24','23:00','Mercedes-Benz Stadium','Atlanta'],
-  // Päev 15 - 25. juuni
-  ['F',3,'2026-06-25','00:00','Hard Rock Stadium','Miami'],
-  ['G',3,'2026-06-25','20:00','AT&T Stadium','Dallas'],
-  ['H',3,'2026-06-25','23:00','Rose Bowl','Los Angeles'],
-  // Päev 16 - 26. juuni
-  ['I',3,'2026-06-26','00:00','Arrowhead Stadium','Kansas City'],
-  ['J',3,'2026-06-26','20:00','Estadio Azteca','Mexico City'],
-  ['K',3,'2026-06-26','23:00','Gillette Stadium','Boston'],
-  // Päev 17 - 27. juuni
-  ['L',3,'2026-06-27','00:00','NRG Stadium','Houston'],
-  ['A',4,'2026-06-27','20:00','Estadio Azteca','Mexico City'],
-  ['A',5,'2026-06-27','20:00','Estadio BBVA','Monterrey'],
-  // Päev 18 - 28. juuni
-  ['B',4,'2026-06-28','20:00','BMO Field','Toronto'],
-  ['B',5,'2026-06-28','20:00','BC Place','Vancouver'],
-  ['C',4,'2026-06-28','23:00','SoFi Stadium','Los Angeles'],
-  // Päev 19 - 29. juuni
-  ['C',5,'2026-06-29','00:00','Rose Bowl','Los Angeles'],
-  ['D',4,'2026-06-29','20:00','MetLife Stadium','New York'],
-  ['D',5,'2026-06-29','20:00','AT&T Stadium','Dallas'],
-  // Päev 20 - 30. juuni
-  ['E',4,'2026-06-30','20:00','Arrowhead Stadium','Kansas City'],
-  ['E',5,'2026-06-30','20:00','NRG Stadium','Houston'],
-  ['F',4,'2026-06-30','23:00','Levi\'s Stadium','San Jose'],
-  // Päev 21 - 1. juuli
-  ['F',5,'2026-07-01','00:00','Lumen Field','Seattle'],
-  ['G',4,'2026-07-01','20:00','Hard Rock Stadium','Miami'],
-  ['G',5,'2026-07-01','20:00','Mercedes-Benz Stadium','Atlanta'],
-  // Päev 22 - 2. juuli
-  ['H',4,'2026-07-02','20:00','Estadio Akron','Guadalajara'],
-  ['H',5,'2026-07-02','20:00','Estadio BBVA','Monterrey'],
-  ['I',4,'2026-07-02','23:00','Gillette Stadium','Boston'],
-  // Päev 23 - 3. juuli
-  ['I',5,'2026-07-03','00:00','Mercedes-Benz Stadium','Atlanta'],
-  ['J',4,'2026-07-03','20:00','Estadio Azteca','Mexico City'],
-  ['J',5,'2026-07-03','20:00','Estadio Akron','Guadalajara'],
-  // Päev 24 - 4. juuli
-  ['K',4,'2026-07-04','20:00','MetLife Stadium','New York'],
-  ['K',5,'2026-07-04','20:00','AT&T Stadium','Dallas'],
-  ['L',4,'2026-07-04','23:00','SoFi Stadium','Los Angeles'],
-  // Päev 25 - 5. juuli
-  ['L',5,'2026-07-05','00:00','Rose Bowl','Los Angeles'],
+  // Ametlik FIFA World Cup 2026 grupiturniiri ajakava
+  // Format: [group, matchIndex, dateUTC, timeUTC, venue, city]  (dateUTC/timeUTC on GMT/UTC; äpp teisendab EEST-i)
+  ['A',0,'2026-06-11','19:00','Estadio Azteca','Mexico City'],
+  ['A',1,'2026-06-12','02:00','Estadio Akron','Guadalajara'],
+  ['B',0,'2026-06-12','19:00','BMO Field','Toronto'],
+  ['D',0,'2026-06-13','01:00','SoFi Stadium','Los Angeles'],
+  ['B',1,'2026-06-13','19:00','Levis Stadium','San Francisco'],
+  ['C',0,'2026-06-13','22:00','MetLife Stadium','New York'],
+  ['C',1,'2026-06-14','01:00','Gillette Stadium','Boston'],
+  ['D',1,'2026-06-14','04:00','BC Place','Vancouver'],
+  ['E',0,'2026-06-14','17:00','NRG Stadium','Houston'],
+  ['F',0,'2026-06-14','20:00','AT&T Stadium','Dallas'],
+  ['E',1,'2026-06-14','23:00','Lincoln Financial Field','Philadelphia'],
+  ['F',1,'2026-06-15','02:00','Estadio BBVA','Monterrey'],
+  ['H',0,'2026-06-15','16:00','Mercedes-Benz Stadium','Atlanta'],
+  ['G',0,'2026-06-15','19:00','BC Place','Vancouver'],
+  ['H',1,'2026-06-15','22:00','Hard Rock Stadium','Miami'],
+  ['G',1,'2026-06-16','01:00','SoFi Stadium','Los Angeles'],
+  ['I',0,'2026-06-16','19:00','MetLife Stadium','New York'],
+  ['I',1,'2026-06-16','22:00','Gillette Stadium','Boston'],
+  ['J',0,'2026-06-17','01:00','Arrowhead Stadium','Kansas City'],
+  ['J',1,'2026-06-17','04:00','Levis Stadium','San Francisco'],
+  ['K',0,'2026-06-17','17:00','NRG Stadium','Houston'],
+  ['L',0,'2026-06-17','20:00','AT&T Stadium','Dallas'],
+  ['L',1,'2026-06-17','23:00','BMO Field','Toronto'],
+  ['K',1,'2026-06-18','02:00','Estadio Azteca','Mexico City'],
+  ['A',3,'2026-06-18','16:00','Mercedes-Benz Stadium','Atlanta'],
+  ['B',3,'2026-06-18','19:00','SoFi Stadium','Los Angeles'],
+  ['B',2,'2026-06-18','22:00','BC Place','Vancouver'],
+  ['A',2,'2026-06-19','01:00','Estadio Akron','Guadalajara'],
+  ['D',2,'2026-06-19','19:00','Lumen Field','Seattle'],
+  ['C',3,'2026-06-19','22:00','Gillette Stadium','Boston'],
+  ['C',2,'2026-06-20','00:30','Lincoln Financial Field','Philadelphia'],
+  ['D',3,'2026-06-20','03:00','Levis Stadium','San Francisco'],
+  ['F',2,'2026-06-20','17:00','NRG Stadium','Houston'],
+  ['E',2,'2026-06-20','20:00','BMO Field','Toronto'],
+  ['E',3,'2026-06-21','03:00','Arrowhead Stadium','Kansas City'],
+  ['F',3,'2026-06-21','04:00','Estadio BBVA','Monterrey'],
+  ['H',2,'2026-06-21','16:00','Mercedes-Benz Stadium','Atlanta'],
+  ['G',2,'2026-06-21','19:00','SoFi Stadium','Los Angeles'],
+  ['H',3,'2026-06-21','22:00','Hard Rock Stadium','Miami'],
+  ['G',3,'2026-06-22','01:00','BC Place','Vancouver'],
+  ['J',2,'2026-06-22','17:00','AT&T Stadium','Dallas'],
+  ['I',2,'2026-06-22','21:00','Lincoln Financial Field','Philadelphia'],
+  ['I',3,'2026-06-23','00:00','MetLife Stadium','New York'],
+  ['J',3,'2026-06-23','03:00','Levis Stadium','San Francisco'],
+  ['K',2,'2026-06-23','17:00','NRG Stadium','Houston'],
+  ['L',2,'2026-06-23','20:00','Gillette Stadium','Boston'],
+  ['L',3,'2026-06-23','23:00','BMO Field','Toronto'],
+  ['K',3,'2026-06-24','02:00','Estadio Akron','Guadalajara'],
+  ['B',4,'2026-06-24','19:00','BC Place','Vancouver'],
+  ['B',5,'2026-06-24','19:00','Lumen Field','Seattle'],
+  ['C',4,'2026-06-24','22:00','Hard Rock Stadium','Miami'],
+  ['C',5,'2026-06-24','22:00','Mercedes-Benz Stadium','Atlanta'],
+  ['A',4,'2026-06-25','01:00','Estadio Azteca','Mexico City'],
+  ['A',5,'2026-06-25','01:00','Estadio BBVA','Monterrey'],
+  ['E',4,'2026-06-25','20:00','MetLife Stadium','New York'],
+  ['E',5,'2026-06-25','20:00','Lincoln Financial Field','Philadelphia'],
+  ['F',5,'2026-06-25','23:00','AT&T Stadium','Dallas'],
+  ['F',4,'2026-06-25','23:00','Arrowhead Stadium','Kansas City'],
+  ['D',4,'2026-06-26','02:00','SoFi Stadium','Los Angeles'],
+  ['D',5,'2026-06-26','02:00','Levis Stadium','San Francisco'],
+  ['I',4,'2026-06-26','19:00','Gillette Stadium','Boston'],
+  ['I',5,'2026-06-26','19:00','BMO Field','Toronto'],
+  ['H',5,'2026-06-27','00:00','NRG Stadium','Houston'],
+  ['H',4,'2026-06-27','00:00','Estadio Akron','Guadalajara'],
+  ['G',5,'2026-06-27','03:00','Lumen Field','Seattle'],
+  ['G',4,'2026-06-27','03:00','BC Place','Vancouver'],
+  ['L',4,'2026-06-27','21:00','MetLife Stadium','New York'],
+  ['L',5,'2026-06-27','21:00','Lincoln Financial Field','Philadelphia'],
+  ['K',4,'2026-06-27','23:30','Hard Rock Stadium','Miami'],
+  ['K',5,'2026-06-27','23:30','Mercedes-Benz Stadium','Atlanta'],
+  ['J',5,'2026-06-28','02:00','Arrowhead Stadium','Kansas City'],
+  ['J',4,'2026-06-28','02:00','AT&T Stadium','Dallas'],
 ];
 
 // Convert UTC datetime to Estonian time string (UTC+3 in summer)
