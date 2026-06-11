@@ -357,7 +357,7 @@ nav{display:flex;gap:2px;flex:1}
 
 <script>
 // ═══════ CONSTANTS ═══════
-const TOURNAMENT_START = new Date('2026-06-11T12:00:00');
+const TOURNAMENT_START = new Date('2026-06-11T20:00:00Z'); // Esimene mäng: Mehhiko vs Lõuna-Korea kell 23:00 EEST
 
 const GROUPS = {
   A:['Mehhiko','Lõuna-Korea','Lõuna-Aafrika','Tšehhi'],
@@ -510,7 +510,7 @@ function renderLogin(){
   const s=getAll(),now=new Date(),diff=TOURNAMENT_START-now;
   const cdown=document.getElementById('cdown');
   if(diff>0){const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000);
-    cdown.textContent=`⏰ Turniir algab ${d} päeva ja ${h} tunni pärast`;cdown.className='cdown-box cdown-open';}
+    cdown.textContent=`⏰ Esimene mäng algab ${d} päeva ja ${h} tunni pärast`;cdown.className='cdown-box cdown-open';}
   else{cdown.textContent='🔒 Turniir on käimas – ennustused lukustatud';cdown.className='cdown-box cdown-locked';}
   const list=document.getElementById('player-list');
   if(!s.players.length){list.innerHTML='<p style="color:var(--text2);font-size:12px;text-align:center;padding:6px">Mängijaid pole veel lisatud</p>';return;}
@@ -852,13 +852,13 @@ function renderPredsSummary(s){
 // ═══════ RESULTS TAB ═══════
 function renderResults(){
   const act=getActual(),admin=isAdmin(),viewer=isViewerMode();
-  const canEdit=admin; // admin saab ALATI muuta, sõltumata vaaterežiimist
+  const canEdit=admin&&!viewer;
   const groupsHtml=`<div class="results-section">
     <h3>Grupiturniir <span class="rtag">+1 punkt iga õige W/T/L eest</span></h3>
     <p style="color:var(--text2);font-size:12px;margin-bottom:12px"><strong>W</strong> = kodumeeskond võidab &nbsp; <strong>T</strong> = viik &nbsp; <strong>L</strong> = külaline võidab</p>
     <div class="groups-grid">${Object.entries(GROUPS).map(([l,t])=>actualGroupCard(l,t,act,canEdit)).join('')}</div>
   </div>`;
-  const viewNote=viewer&&!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaaterežiim — tulemused on kirjutuskaitstud. Skoorid uuendatakse automaatselt kui admin saadab uue faili.</div>`:(!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:``);
+  const viewNote=viewer?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaaterežiim — tulemused on kirjutuskaitstud. Skoorid uuendatakse automaatselt kui admin saadab uue faili.</div>`:(!admin?`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">👁 Vaateõigus — tulemusi saab muuta ainult admin.</div>`:``);
   document.getElementById('results-content').innerHTML=`
     ${viewNote}
     ${groupsHtml}
