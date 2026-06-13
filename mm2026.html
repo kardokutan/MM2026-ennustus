@@ -271,6 +271,9 @@ nav{display:flex;gap:2px;flex:1}
       <div class="row" style="margin-top:6px">
         <button class="btn btn-s" style="flex:1" onclick="exportScores()">📤 Ekspordi skoorid</button>
       </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn btn-s" style="flex:1;border-color:var(--red);color:#f85149" onclick="resetActualResults()">🗑 Nulli tulemused (lähtesta)</button>
+      </div>
       <div id="import-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px"></div>
     </div>
     <div id="scores-section" style="display:none">
@@ -1226,6 +1229,16 @@ function exportScores(){
   const a=document.createElement('a');
   a.href=url;a.download=`mm2026_skoorid_${new Date().toISOString().slice(0,10)}.json`;
   a.click();URL.revokeObjectURL(url);
+}
+function resetActualResults(){
+  if(!isAdmin())return;
+  if(!confirm('Nulli kõik tegelikud tulemused (skoorid + play-off võitjad)? Mängijate ennustused jäävad alles. Pärast saad uuesti "Laadi tulemused" vajutada.'))return;
+  const s=getAll();
+  s.actual=freshActual();
+  saveAll(s);
+  const status=document.getElementById('import-status');
+  if(status){status.textContent='✓ Tulemused lähtestatud — vajuta nüüd "Laadi tulemused"';status.style.color='var(--green3)';}
+  renderLogin();
 }
 function importScores(event){
   const file=event.target.files[0];if(!file)return;
