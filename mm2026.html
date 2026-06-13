@@ -304,7 +304,7 @@ nav{display:flex;gap:2px;flex:1}
     <div class="header-r">
       <span class="chip" id="hchip"></span>
       <span class="lock-badge" id="hlock">🔒 Lukus</span>
-      <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi uued tulemused FIFA World Cup andmevoost">⬇ Laadi tulemused</button>
+      <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi lõppenud mängude tulemused">⬇ Laadi tulemused</button>
       <button class="btn btn-s btn-sm" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
       <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
     </div>
@@ -360,17 +360,17 @@ nav{display:flex;gap:2px;flex:1}
 const TOURNAMENT_START = new Date('2026-06-11T12:00:00');
 
 const GROUPS = {
-  A:['Mehhiko','Lõuna-Aafrika','Lõuna-Korea','Tšehhi'],
-  B:['Kanada','Bosnia-Herzegovina','Katar','Šveits'],
+  A:['Mehhiko','Lõuna-Korea','Lõuna-Aafrika','Tšehhi'],
+  B:['Kanada','Šveits','Bosnia-Herzegovina','Katar'],
   C:['Brasiilia','Maroko','Haiti','Šotimaa'],
-  D:['USA','Paraguay','Austraalia','Türgi'],
-  E:['Saksamaa','Curaçao','Elevandiluurannik','Ecuador'],
+  D:['USA','Türgi','Paraguay','Austraalia'],
+  E:['Saksamaa','Elevandiluurannik','Ecuador','Curaçao'],
   F:['Holland','Jaapan','Rootsi','Tuneesia'],
-  G:['Belgia','Egiptus','Iraan','Uus-Meremaa'],
-  H:['Hispaania','Roheneemesaared','Saudi Araabia','Uruguay'],
-  I:['Prantsusmaa','Senegal','Iraak','Norra'],
+  G:['Belgia','Iraan','Egiptus','Uus-Meremaa'],
+  H:['Hispaania','Uruguay','Saudi Araabia','Roheneemesaared'],
+  I:['Prantsusmaa','Senegal','Norra','Iraak'],
   J:['Argentina','Alžeeria','Austria','Jordaania'],
-  K:['Portugal','DR Kongo','Usbekistan','Colombia'],
+  K:['Portugal','Colombia','DR Kongo','Usbekistan'],
   L:['Inglismaa','Horvaatia','Ghana','Panama'],
 };
 
@@ -387,24 +387,6 @@ const FLAGS = {
   'Argentina':'🇦🇷','Alžeeria':'🇩🇿','Austria':'🇦🇹','Jordaania':'🇯🇴',
   'Portugal':'🇵🇹','Colombia':'🇨🇴','DR Kongo':'🇨🇩','Usbekistan':'🇺🇿',
   'Inglismaa':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Horvaatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦',
-};
-
-// ESPN team name → Estonian name
-const ESPN_MAP = {
-  'Mexico':'Mehhiko','South Korea':'Lõuna-Korea','South Africa':'Lõuna-Aafrika',
-  'Czech Republic':'Tšehhi','Czechia':'Tšehhi',
-  'Canada':'Kanada','Switzerland':'Šveits','Bosnia and Herzegovina':'Bosnia-Herzegovina','Bosnia-Herzegovina':'Bosnia-Herzegovina',
-  'Qatar':'Katar','Brazil':'Brasiilia','Morocco':'Maroko','Haiti':'Haiti','Scotland':'Šotimaa',
-  'United States':'USA','Turkey':'Türgi','Türkiye':'Türgi','Paraguay':'Paraguay','Australia':'Austraalia',
-  'Germany':'Saksamaa',"Ivory Coast":'Elevandiluurannik',"Côte d'Ivoire":'Elevandiluurannik','Cote d\'Ivoire':'Elevandiluurannik',
-  'Ecuador':'Ecuador','Curacao':'Curaçao','Curaçao':'Curaçao',
-  'Netherlands':'Holland','Japan':'Jaapan','Sweden':'Rootsi','Tunisia':'Tuneesia',
-  'Belgium':'Belgia','Iran':'Iraan','Egypt':'Egiptus','New Zealand':'Uus-Meremaa',
-  'Spain':'Hispaania','Uruguay':'Uruguay','Saudi Arabia':'Saudi Araabia','Cape Verde':'Roheneemesaared',
-  'France':'Prantsusmaa','Senegal':'Senegal','Norway':'Norra','Iraq':'Iraak',
-  'Argentina':'Argentina','Algeria':'Alžeeria','Austria':'Austria','Jordan':'Jordaania',
-  'Portugal':'Portugal','Colombia':'Colombia','DR Congo':'DR Kongo','Democratic Republic of Congo':'DR Kongo',
-  'Uzbekistan':'Usbekistan','England':'Inglismaa','Croatia':'Horvaatia','Ghana':'Ghana','Panama':'Panama',
 };
 
 const ALL_TEAMS = Object.values(GROUPS).flat();
@@ -1011,138 +993,59 @@ function buildMatchLookup(){
   });
   return lk;
 }
-function espnName(n){return ESPN_MAP[n]||n;}
 function toWTL(homeScore,awayScore){return homeScore>awayScore?'W':homeScore<awayScore?'L':'T';}
 
-async function autoFetchResults(){
-  const btn=document.getElementById('auto-fetch-btn');
-  const status=document.getElementById('fetch-status');
-  btn.disabled=true;btn.textContent='⏳ Laen...';
-  status.textContent='Ühendan FIFA World Cup andmevooga...';status.className='fetch-status info';
+// openfootball nime → Eesti nimi (sama nimekuju kui GROUPS-is)
+const OF_MAP={
+  'Mexico':'Mehhiko','South Korea':'Lõuna-Korea','South Africa':'Lõuna-Aafrika',
+  'Czech Republic':'Tšehhi','Canada':'Kanada','Switzerland':'Šveits',
+  'Bosnia & Herzegovina':'Bosnia-Herzegovina','Qatar':'Katar','Brazil':'Brasiilia',
+  'Morocco':'Maroko','Haiti':'Haiti','Scotland':'Šotimaa','USA':'USA','Turkey':'Türgi',
+  'Paraguay':'Paraguay','Australia':'Austraalia','Germany':'Saksamaa',
+  'Ivory Coast':'Elevandiluurannik','Ecuador':'Ecuador','Curaçao':'Curaçao',
+  'Netherlands':'Holland','Japan':'Jaapan','Sweden':'Rootsi','Tunisia':'Tuneesia',
+  'Belgium':'Belgia','Iran':'Iraan','Egypt':'Egiptus','New Zealand':'Uus-Meremaa',
+  'Spain':'Hispaania','Uruguay':'Uruguay','Saudi Arabia':'Saudi Araabia',
+  'Cape Verde':'Roheneemesaared','France':'Prantsusmaa','Senegal':'Senegal',
+  'Norway':'Norra','Iraq':'Iraak','Argentina':'Argentina','Algeria':'Alžeeria',
+  'Austria':'Austria','Jordan':'Jordaania','Portugal':'Portugal','Colombia':'Colombia',
+  'DR Congo':'DR Kongo','Uzbekistan':'Usbekistan','England':'Inglismaa',
+  'Croatia':'Horvaatia','Ghana':'Ghana','Panama':'Panama',
+};
+function ofName(n){return OF_MAP[n]||n;}
 
+// Avalik public-domain andmeallikas, otse raw.githubusercontent.com (CORS-sõbralik, proksit pole vaja)
+const OF_URL='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+
+// Loeb openfootball JSON-i ja uuendab grupimängude tulemused + skoorid.
+// Tagastab uuendatud mängude arvu, või -1 kui ühendus ebaõnnestus.
+async function fetchFromOpenfootball(){
   const lk=buildMatchLookup();
-  let updated=0,checked=0;
-  const PROXIES=[
-    url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-    url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
-  ];
-
-  // Try fetching full date range in one call, then individual days as fallback
-  const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-  const urls=[
-    `${espnBase}?dates=20260611-20260719&limit=200`,
-    ...Array.from({length:40},(_,i)=>{const d=new Date('2026-06-11');d.setDate(d.getDate()+i);return`${espnBase}?dates=${d.toISOString().slice(0,10).replace(/-/g,'')}`;}),
-  ];
-
-  for(const proxy of PROXIES){
-    try{
-      // Try range query first
-      const rangeUrl=urls[0];
-      const res=await fetch(proxy(rangeUrl),{signal:AbortSignal.timeout(8000)});
-      if(!res.ok)continue;
-      const json=await res.json();
-      const raw=json.contents||json;
-      const data=typeof raw==='string'?JSON.parse(raw):raw;
-      const events=data.events||[];
-      if(!events.length){
-        // Try daily fetch
-        for(const dayUrl of urls.slice(1)){
-          try{
-            const r2=await fetch(proxy(dayUrl),{signal:AbortSignal.timeout(5000)});
-            if(!r2.ok)continue;
-            const j2=await r2.json();
-            const raw2=j2.contents||j2;
-            const d2=typeof raw2==='string'?JSON.parse(raw2):raw2;
-            checked++;
-            if(processEvents(d2.events||[],lk))updated+=(d2.events||[]).filter(e=>e.competitions?.[0]?.status?.type?.completed).length;
-          }catch{}
-        }
-        break;
-      }else{
-        // Process range results
-        let n=0;
-        events.forEach(event=>{
-          const comp=event.competitions?.[0];
-          if(!comp?.status?.type?.completed)return;
-          const home=comp.competitors?.find(c=>c.homeAway==='home');
-          const away=comp.competitors?.find(c=>c.homeAway==='away');
-          if(!home||!away)return;
-          const hN=espnName(home.team?.displayName||'');
-          const aN=espnName(away.team?.displayName||'');
-          const hS=parseInt(home.score),aS=parseInt(away.score);
-          if(isNaN(hS)||isNaN(aS))return;
-          const m=lk[`${hN}|${aN}`];
-          if(!m)return;
-          const result=m.swap?toWTL(aS,hS)===('W')?'L':toWTL(aS,hS)==='L'?'W':'T':toWTL(hS,aS);
-          // Correct swap logic:
-          let res;
-          if(!m.swap){res=toWTL(hS,aS);}
-          else{const raw=toWTL(hS,aS);res=raw==='W'?'L':raw==='L'?'W':'T';}
-          updateActual(a=>{if(!a.results)a.results={};a.results[`${m.letter}_${m.mi}`]=res;});
-          n++;
-        });
-        updated=n;
-      }
-      break;
-    }catch(e){continue;}
-  }
-
-  if(updated>0){
-    status.textContent=`✓ Uuendatud ${updated} mängu tulemust`;status.className='fetch-status ok';
-    renderResults();renderGroups();
-  }else{
-    status.textContent='Lõppenud mänge ei leitud (turniir pole alanud või ühendus ebaõnnestus)';
-    status.className='fetch-status info';
-  }
-  btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
-}
-
-async function autoFetchResultsGroups(){
-  const btn=document.getElementById('grp-fetch-btn');
-  const status=document.getElementById('grp-fetch-status');
-  btn.disabled=true;btn.textContent='⏳ Laen...';
-  status.textContent='';status.className='fetch-status info';
-  const lk=buildMatchLookup();
-  let updated=0;
-  const PROXIES=[
-    url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-    url=>`https://corsproxy.io/?${encodeURIComponent(url)}`,
-  ];
-  const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-  const rangeUrl=`${espnBase}?dates=20260611-20260719&limit=200`;
-  for(const proxy of PROXIES){
-    try{
-      const res=await fetch(proxy(rangeUrl),{signal:AbortSignal.timeout(8000)});
-      if(!res.ok)continue;
-      const json=await res.json();
-      const raw=json.contents||json;
-      const data=typeof raw==='string'?JSON.parse(raw):raw;
-      const events=data.events||[];
-      if(events.length){updated=processEvents(events,lk);break;}
-      // fallback: daily
-      const days=Array.from({length:40},(_,i)=>{const d=new Date('2026-06-11');d.setDate(d.getDate()+i);return`${espnBase}?dates=${d.toISOString().slice(0,10).replace(/-/g,'')}`});
-      for(const dayUrl of days){try{const r2=await fetch(proxy(dayUrl),{signal:AbortSignal.timeout(5000)});if(!r2.ok)continue;const j2=await r2.json();const raw2=j2.contents||j2;const d2=typeof raw2==='string'?JSON.parse(raw2):raw2;updated+=processEvents(d2.events||[],lk);}catch{}}
-      break;
-    }catch{continue;}
-  }
-  if(updated>0){status.textContent=`✓ ${updated} mängu uuendatud`;status.className='fetch-status ok';renderGroups();}
-  else{status.textContent='Lõppenud mänge ei leitud';status.className='fetch-status info';}
-  btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
-}
-
-function processEvents(events,lk){
+  let data;
+  try{
+    const res=await fetch(OF_URL,{cache:'no-store'});
+    if(!res.ok){console.warn('[MM2026] HTTP viga:',res.status,res.statusText);return -1;}
+    const txt=await res.text();
+    data=JSON.parse(txt);
+  }catch(err){console.warn('[MM2026] Fetch ebaõnnestus:',err&&err.message?err.message:err);return -1;}
+  const matches=(data&&data.matches)||[];
   let n=0;
-  events.forEach(event=>{
-    const comp=event.competitions?.[0];if(!comp?.status?.type?.completed)return;
-    const home=comp.competitors?.find(c=>c.homeAway==='home');
-    const away=comp.competitors?.find(c=>c.homeAway==='away');
-    if(!home||!away)return;
-    const hN=espnName(home.team?.displayName||''),aN=espnName(away.team?.displayName||'');
-    const hS=parseInt(home.score),aS=parseInt(away.score);if(isNaN(hS)||isNaN(aS))return;
-    const m=lk[`${hN}|${aN}`];if(!m)return;
+  matches.forEach(mt=>{
+    if(!mt.group)return;                       // ainult grupimängud
+    if(!mt.score||!mt.score.ft)return;         // ainult peetud mängud
+    const hN=ofName(mt.team1||''),aN=ofName(mt.team2||'');
+    const hS=parseInt(mt.score.ft[0]),aS=parseInt(mt.score.ft[1]);
+    if(isNaN(hS)||isNaN(aS))return;
+    const m=lk[`${hN}|${aN}`];                 // sobita meeskonnapaari alusel
+    if(!m)return;
     let res,hs,as_;
-    if(!m.swap){res=toWTL(hS,aS);hs=hS;as_=aS;}else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';hs=aS;as_=hS;}
-    updateActual(a=>{if(!a.results)a.results={};if(!a.scores)a.scores={};const k=`${m.letter}_${m.mi}`;a.results[k]=res;a.scores[k]={h:hs,a:as_};});n++;
+    if(!m.swap){res=toWTL(hS,aS);hs=hS;as_=aS;}
+    else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';hs=aS;as_=hS;}
+    updateActual(a=>{
+      if(!a.results)a.results={};if(!a.scores)a.scores={};
+      const k=`${m.letter}_${m.mi}`;a.results[k]=res;a.scores[k]={h:hs,a:as_};
+    });
+    n++;
   });
   return n;
 }
@@ -1291,25 +1194,11 @@ async function adminFetchResults(){
   const btn=document.getElementById('login-fetch-btn');
   const status=document.getElementById('login-fetch-status');
   btn.disabled=true;btn.textContent='⏳ Laen...';
-  status.textContent='Ühendan FIFA World Cup andmevooga...';status.style.color='var(--text2)';
-  const lk=buildMatchLookup();let updated=0;
-  const PROXIES=[url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,url=>`https://corsproxy.io/?${encodeURIComponent(url)}`];
-  const espnBase='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-  for(const proxy of PROXIES){
-    try{
-      const res=await fetch(proxy(`${espnBase}?dates=20260611-20260719&limit=200`),{signal:AbortSignal.timeout(8000)});
-      if(!res.ok)continue;
-      const json=await res.json();const raw=json.contents||json;
-      const data=typeof raw==='string'?JSON.parse(raw):raw;
-      const events=data.events||[];
-      if(events.length){updated=processEvents(events,lk);break;}
-      const days=Array.from({length:40},(_,i)=>{const d=new Date('2026-06-11');d.setDate(d.getDate()+i);return`${espnBase}?dates=${d.toISOString().slice(0,10).replace(/-/g,'')}`});
-      for(const dayUrl of days){try{const r2=await fetch(proxy(dayUrl),{signal:AbortSignal.timeout(5000)});if(!r2.ok)continue;const j2=await r2.json();const raw2=j2.contents||j2;const d2=typeof raw2==='string'?JSON.parse(raw2):raw2;updated+=processEvents(d2.events||[],lk);}catch{}}
-      break;
-    }catch{continue;}
-  }
+  status.textContent='Laen tulemusi...';status.style.color='var(--text2)';
+  const updated=await fetchFromOpenfootball();
   if(updated>0){status.textContent=`✓ ${updated} mängu uuendatud`;status.style.color='var(--green3)';updateFetchBtn();renderGroups();}
-  else{status.textContent='Lõppenud mänge ei leitud';status.style.color='var(--text2)';}
+  else if(updated===0){status.textContent='Lõppenud grupimänge veel pole';status.style.color='var(--text2)';}
+  else{status.textContent='❌ Ühendus ebaõnnestus';status.style.color='var(--red)';}
   btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
 }
 
@@ -1351,80 +1240,103 @@ function importScores(event){
 // All group stage matches with UTC times (Eesti suveaeg = UTC+3)
 // Format: [group, matchIndex, dateUTC, timeUTC, venue, city]
 const SCHEDULE = [
-  // Ametlik FIFA World Cup 2026 grupiturniiri ajakava
-  // Format: [group, matchIndex, dateUTC, timeUTC, venue, city]  (dateUTC/timeUTC on GMT/UTC; äpp teisendab EEST-i)
-  ['A',0,'2026-06-11','19:00','Estadio Azteca','Mexico City'],
-  ['A',1,'2026-06-12','02:00','Estadio Akron','Guadalajara'],
-  ['B',0,'2026-06-12','19:00','BMO Field','Toronto'],
-  ['D',0,'2026-06-13','01:00','SoFi Stadium','Los Angeles'],
-  ['B',1,'2026-06-13','19:00','Levis Stadium','San Francisco'],
-  ['C',0,'2026-06-13','22:00','MetLife Stadium','New York'],
-  ['C',1,'2026-06-14','01:00','Gillette Stadium','Boston'],
-  ['D',1,'2026-06-14','04:00','BC Place','Vancouver'],
-  ['E',0,'2026-06-14','17:00','NRG Stadium','Houston'],
-  ['F',0,'2026-06-14','20:00','AT&T Stadium','Dallas'],
-  ['E',1,'2026-06-14','23:00','Lincoln Financial Field','Philadelphia'],
-  ['F',1,'2026-06-15','02:00','Estadio BBVA','Monterrey'],
-  ['H',0,'2026-06-15','16:00','Mercedes-Benz Stadium','Atlanta'],
-  ['G',0,'2026-06-15','19:00','BC Place','Vancouver'],
-  ['H',1,'2026-06-15','22:00','Hard Rock Stadium','Miami'],
-  ['G',1,'2026-06-16','01:00','SoFi Stadium','Los Angeles'],
-  ['I',0,'2026-06-16','19:00','MetLife Stadium','New York'],
-  ['I',1,'2026-06-16','22:00','Gillette Stadium','Boston'],
-  ['J',0,'2026-06-17','01:00','Arrowhead Stadium','Kansas City'],
-  ['J',1,'2026-06-17','04:00','Levis Stadium','San Francisco'],
-  ['K',0,'2026-06-17','17:00','NRG Stadium','Houston'],
-  ['L',0,'2026-06-17','20:00','AT&T Stadium','Dallas'],
-  ['L',1,'2026-06-17','23:00','BMO Field','Toronto'],
-  ['K',1,'2026-06-18','02:00','Estadio Azteca','Mexico City'],
-  ['A',3,'2026-06-18','16:00','Mercedes-Benz Stadium','Atlanta'],
-  ['B',3,'2026-06-18','19:00','SoFi Stadium','Los Angeles'],
-  ['B',2,'2026-06-18','22:00','BC Place','Vancouver'],
-  ['A',2,'2026-06-19','01:00','Estadio Akron','Guadalajara'],
-  ['D',2,'2026-06-19','19:00','Lumen Field','Seattle'],
-  ['C',3,'2026-06-19','22:00','Gillette Stadium','Boston'],
-  ['C',2,'2026-06-20','00:30','Lincoln Financial Field','Philadelphia'],
-  ['D',3,'2026-06-20','03:00','Levis Stadium','San Francisco'],
-  ['F',2,'2026-06-20','17:00','NRG Stadium','Houston'],
-  ['E',2,'2026-06-20','20:00','BMO Field','Toronto'],
-  ['E',3,'2026-06-21','03:00','Arrowhead Stadium','Kansas City'],
-  ['F',3,'2026-06-21','04:00','Estadio BBVA','Monterrey'],
-  ['H',2,'2026-06-21','16:00','Mercedes-Benz Stadium','Atlanta'],
-  ['G',2,'2026-06-21','19:00','SoFi Stadium','Los Angeles'],
-  ['H',3,'2026-06-21','22:00','Hard Rock Stadium','Miami'],
-  ['G',3,'2026-06-22','01:00','BC Place','Vancouver'],
-  ['J',2,'2026-06-22','17:00','AT&T Stadium','Dallas'],
-  ['I',2,'2026-06-22','21:00','Lincoln Financial Field','Philadelphia'],
-  ['I',3,'2026-06-23','00:00','MetLife Stadium','New York'],
-  ['J',3,'2026-06-23','03:00','Levis Stadium','San Francisco'],
-  ['K',2,'2026-06-23','17:00','NRG Stadium','Houston'],
-  ['L',2,'2026-06-23','20:00','Gillette Stadium','Boston'],
-  ['L',3,'2026-06-23','23:00','BMO Field','Toronto'],
-  ['K',3,'2026-06-24','02:00','Estadio Akron','Guadalajara'],
-  ['B',4,'2026-06-24','19:00','BC Place','Vancouver'],
-  ['B',5,'2026-06-24','19:00','Lumen Field','Seattle'],
-  ['C',4,'2026-06-24','22:00','Hard Rock Stadium','Miami'],
-  ['C',5,'2026-06-24','22:00','Mercedes-Benz Stadium','Atlanta'],
-  ['A',4,'2026-06-25','01:00','Estadio Azteca','Mexico City'],
-  ['A',5,'2026-06-25','01:00','Estadio BBVA','Monterrey'],
-  ['E',4,'2026-06-25','20:00','MetLife Stadium','New York'],
-  ['E',5,'2026-06-25','20:00','Lincoln Financial Field','Philadelphia'],
-  ['F',5,'2026-06-25','23:00','AT&T Stadium','Dallas'],
-  ['F',4,'2026-06-25','23:00','Arrowhead Stadium','Kansas City'],
-  ['D',4,'2026-06-26','02:00','SoFi Stadium','Los Angeles'],
-  ['D',5,'2026-06-26','02:00','Levis Stadium','San Francisco'],
-  ['I',4,'2026-06-26','19:00','Gillette Stadium','Boston'],
-  ['I',5,'2026-06-26','19:00','BMO Field','Toronto'],
-  ['H',5,'2026-06-27','00:00','NRG Stadium','Houston'],
-  ['H',4,'2026-06-27','00:00','Estadio Akron','Guadalajara'],
-  ['G',5,'2026-06-27','03:00','Lumen Field','Seattle'],
-  ['G',4,'2026-06-27','03:00','BC Place','Vancouver'],
-  ['L',4,'2026-06-27','21:00','MetLife Stadium','New York'],
-  ['L',5,'2026-06-27','21:00','Lincoln Financial Field','Philadelphia'],
-  ['K',4,'2026-06-27','23:30','Hard Rock Stadium','Miami'],
-  ['K',5,'2026-06-27','23:30','Mercedes-Benz Stadium','Atlanta'],
-  ['J',5,'2026-06-28','02:00','Arrowhead Stadium','Kansas City'],
-  ['J',4,'2026-06-28','02:00','AT&T Stadium','Dallas'],
+  // Päev 1 - 11. juuni
+  ['A',0,'2026-06-11','20:00','Estadio Azteca','Mexico City'],
+  ['B',0,'2026-06-11','23:00','BMO Field','Toronto'],
+  // Päev 2 - 12. juuni
+  ['C',0,'2026-06-12','00:00','SoFi Stadium','Los Angeles'],
+  ['D',0,'2026-06-12','20:00','MetLife Stadium','New York'],
+  ['E',0,'2026-06-12','23:00','AT&T Stadium','Dallas'],
+  // Päev 3 - 13. juuni
+  ['F',0,'2026-06-13','00:00','Levi\'s Stadium','San Jose'],
+  ['A',1,'2026-06-13','20:00','Estadio BBVA','Monterrey'],
+  ['G',0,'2026-06-13','23:00','Hard Rock Stadium','Miami'],
+  // Päev 4 - 14. juuni
+  ['H',0,'2026-06-14','00:00','Rose Bowl','Los Angeles'],
+  ['B',1,'2026-06-14','20:00','BC Place','Vancouver'],
+  ['I',0,'2026-06-14','23:00','Mercedes-Benz Stadium','Atlanta'],
+  // Päev 5 - 15. juuni
+  ['J',0,'2026-06-15','00:00','Arrowhead Stadium','Kansas City'],
+  ['C',1,'2026-06-15','20:00','Estadio Akron','Guadalajara'],
+  ['K',0,'2026-06-15','23:00','Gillette Stadium','Boston'],
+  // Päev 6 - 16. juuni
+  ['L',0,'2026-06-16','00:00','Lumen Field','Seattle'],
+  ['D',1,'2026-06-16','20:00','MetLife Stadium','New York'],
+  ['E',1,'2026-06-16','23:00','NRG Stadium','Houston'],
+  // Päev 7 - 17. juuni
+  ['F',1,'2026-06-17','00:00','SoFi Stadium','Los Angeles'],
+  ['G',1,'2026-06-17','20:00','Hard Rock Stadium','Miami'],
+  ['H',1,'2026-06-17','23:00','AT&T Stadium','Dallas'],
+  // Päev 8 - 18. juuni
+  ['I',1,'2026-06-18','00:00','Mercedes-Benz Stadium','Atlanta'],
+  ['J',1,'2026-06-18','20:00','Estadio Azteca','Mexico City'],
+  ['K',1,'2026-06-18','23:00','BC Place','Vancouver'],
+  // Päev 9 - 19. juuni
+  ['L',1,'2026-06-19','00:00','Levi\'s Stadium','San Jose'],
+  ['A',2,'2026-06-19','20:00','Estadio Azteca','Mexico City'],
+  ['B',2,'2026-06-19','23:00','BMO Field','Toronto'],
+  // Päev 10 - 20. juuni
+  ['C',2,'2026-06-20','00:00','Rose Bowl','Los Angeles'],
+  ['D',2,'2026-06-20','20:00','AT&T Stadium','Dallas'],
+  ['E',2,'2026-06-20','23:00','Arrowhead Stadium','Kansas City'],
+  // Päev 11 - 21. juuni
+  ['F',2,'2026-06-21','00:00','Lumen Field','Seattle'],
+  ['G',2,'2026-06-21','20:00','MetLife Stadium','New York'],
+  ['H',2,'2026-06-21','23:00','Estadio BBVA','Monterrey'],
+  // Päev 12 - 22. juuni
+  ['I',2,'2026-06-22','00:00','Gillette Stadium','Boston'],
+  ['J',2,'2026-06-22','20:00','Estadio Akron','Guadalajara'],
+  ['K',2,'2026-06-22','23:00','NRG Stadium','Houston'],
+  // Päev 13 - 23. juuni
+  ['L',2,'2026-06-23','00:00','SoFi Stadium','Los Angeles'],
+  ['A',3,'2026-06-23','20:00','Estadio BBVA','Monterrey'],
+  ['B',3,'2026-06-23','23:00','BC Place','Vancouver'],
+  // Päev 14 - 24. juuni
+  ['C',3,'2026-06-24','00:00','Estadio Akron','Guadalajara'],
+  ['D',3,'2026-06-24','20:00','Lumen Field','Seattle'],
+  ['E',3,'2026-06-24','23:00','Mercedes-Benz Stadium','Atlanta'],
+  // Päev 15 - 25. juuni
+  ['F',3,'2026-06-25','00:00','Hard Rock Stadium','Miami'],
+  ['G',3,'2026-06-25','20:00','AT&T Stadium','Dallas'],
+  ['H',3,'2026-06-25','23:00','Rose Bowl','Los Angeles'],
+  // Päev 16 - 26. juuni
+  ['I',3,'2026-06-26','00:00','Arrowhead Stadium','Kansas City'],
+  ['J',3,'2026-06-26','20:00','Estadio Azteca','Mexico City'],
+  ['K',3,'2026-06-26','23:00','Gillette Stadium','Boston'],
+  // Päev 17 - 27. juuni
+  ['L',3,'2026-06-27','00:00','NRG Stadium','Houston'],
+  ['A',4,'2026-06-27','20:00','Estadio Azteca','Mexico City'],
+  ['A',5,'2026-06-27','20:00','Estadio BBVA','Monterrey'],
+  // Päev 18 - 28. juuni
+  ['B',4,'2026-06-28','20:00','BMO Field','Toronto'],
+  ['B',5,'2026-06-28','20:00','BC Place','Vancouver'],
+  ['C',4,'2026-06-28','23:00','SoFi Stadium','Los Angeles'],
+  // Päev 19 - 29. juuni
+  ['C',5,'2026-06-29','00:00','Rose Bowl','Los Angeles'],
+  ['D',4,'2026-06-29','20:00','MetLife Stadium','New York'],
+  ['D',5,'2026-06-29','20:00','AT&T Stadium','Dallas'],
+  // Päev 20 - 30. juuni
+  ['E',4,'2026-06-30','20:00','Arrowhead Stadium','Kansas City'],
+  ['E',5,'2026-06-30','20:00','NRG Stadium','Houston'],
+  ['F',4,'2026-06-30','23:00','Levi\'s Stadium','San Jose'],
+  // Päev 21 - 1. juuli
+  ['F',5,'2026-07-01','00:00','Lumen Field','Seattle'],
+  ['G',4,'2026-07-01','20:00','Hard Rock Stadium','Miami'],
+  ['G',5,'2026-07-01','20:00','Mercedes-Benz Stadium','Atlanta'],
+  // Päev 22 - 2. juuli
+  ['H',4,'2026-07-02','20:00','Estadio Akron','Guadalajara'],
+  ['H',5,'2026-07-02','20:00','Estadio BBVA','Monterrey'],
+  ['I',4,'2026-07-02','23:00','Gillette Stadium','Boston'],
+  // Päev 23 - 3. juuli
+  ['I',5,'2026-07-03','00:00','Mercedes-Benz Stadium','Atlanta'],
+  ['J',4,'2026-07-03','20:00','Estadio Azteca','Mexico City'],
+  ['J',5,'2026-07-03','20:00','Estadio Akron','Guadalajara'],
+  // Päev 24 - 4. juuli
+  ['K',4,'2026-07-04','20:00','MetLife Stadium','New York'],
+  ['K',5,'2026-07-04','20:00','AT&T Stadium','Dallas'],
+  ['L',4,'2026-07-04','23:00','SoFi Stadium','Los Angeles'],
+  // Päev 25 - 5. juuli
+  ['L',5,'2026-07-05','00:00','Rose Bowl','Los Angeles'],
 ];
 
 // Convert UTC datetime to Estonian time string (UTC+3 in summer)
@@ -1570,28 +1482,20 @@ async function headerFetchResults() {
   btn.textContent = '⏳ Laen...';
   btn.className = 'btn btn-sm btn-s';
 
-  const lk = buildMatchLookup(); let updated = 0;
-  const PROXIES = [url=>`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, url=>`https://corsproxy.io/?${encodeURIComponent(url)}`];
-  const espnBase = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-  for (const proxy of PROXIES) {
-    try {
-      const res = await fetch(proxy(`${espnBase}?dates=20260611-20260719&limit=200`), {signal:AbortSignal.timeout(8000)});
-      if (!res.ok) continue;
-      const json = await res.json(); const raw = json.contents||json;
-      const data = typeof raw==='string' ? JSON.parse(raw) : raw;
-      const events = data.events||[];
-      if (events.length) { updated = processEvents(events, lk); break; }
-    } catch { continue; }
-  }
+  const updated = await fetchFromOpenfootball();
 
   if (updated > 0) {
     btn.textContent = `✓ ${updated} uuendatud`;
     btn.className = 'btn btn-sm btn-s';
     setTimeout(()=>{ updateFetchBtn(); renderGroups(); if(document.getElementById('tab-schedule').classList.contains('active')) renderSchedule(); }, 1500);
-  } else {
+  } else if (updated === 0) {
     btn.textContent = '— Ei leitud';
     btn.className = 'btn btn-sm btn-s';
     setTimeout(updateFetchBtn, 2000);
+  } else {
+    btn.textContent = '❌ Ühendus ebaõnnestus';
+    btn.className = 'btn btn-sm btn-s';
+    setTimeout(updateFetchBtn, 2500);
   }
 }
 
