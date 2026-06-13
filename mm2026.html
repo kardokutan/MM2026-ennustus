@@ -390,8 +390,24 @@ const FLAGS = {
 };
 
 const ALL_TEAMS = Object.values(GROUPS).flat();
-// 6 matches per group: [home_idx, away_idx]
-const GM = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]];
+// Iga grupi 6 mängu [kodu_idx, külaline_idx] — FIFA ametliku ajakava järjekorras (ei järgi fikseeritud mustrit)
+const GM_BY_GROUP={
+  A:[[0,2],[1,3],[3,2],[0,1],[3,0],[2,1]],
+  B:[[0,2],[3,1],[1,2],[0,3],[1,0],[2,3]],
+  C:[[0,1],[2,3],[3,1],[0,2],[3,0],[1,2]],
+  D:[[0,2],[3,1],[0,3],[1,2],[1,0],[2,3]],
+  E:[[0,3],[1,2],[0,1],[2,3],[3,1],[2,0]],
+  F:[[0,1],[2,3],[0,2],[3,1],[1,2],[3,0]],
+  G:[[0,2],[1,3],[0,1],[3,2],[2,1],[3,0]],
+  H:[[0,3],[2,1],[0,2],[1,3],[3,2],[1,0]],
+  I:[[0,1],[3,2],[0,3],[2,1],[2,0],[1,3]],
+  J:[[0,1],[2,3],[0,2],[3,1],[1,2],[3,0]],
+  K:[[0,2],[3,1],[0,3],[1,2],[1,0],[2,3]],
+  L:[[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]],
+};
+function gmOf(letter){return GM_BY_GROUP[letter];}
+// Üldine 6-elemendiline massiiv ainult loendamiseks (mi indeks), kus meeskonnapaar pole oluline
+const GM = [0,1,2,3,4,5].map(i=>[0,0]);
 
 // R32 bracket: 16 matches [slotA, slotB]
 const R32 = [
@@ -437,7 +453,7 @@ function hasAnyActual(){const a=getActual();return Object.values(a.results).some
 // ═══════ STANDINGS ═══════
 function calcStandings(letter,p){
   const teams=GROUPS[letter],st=teams.map(t=>({name:t,pts:0,w:0,d:0,l:0,played:0}));
-  GM.forEach(([hi,ai],mi)=>{
+  gmOf(letter).forEach(([hi,ai],mi)=>{
     const r=p.results&&p.results[`${letter}_${mi}`];if(!r)return;
     st[hi].played++;st[ai].played++;
     if(r==='W'){st[hi].pts+=3;st[hi].w++;st[ai].l++;}
@@ -559,8 +575,8 @@ function renderGroups(){
 }
 function groupCard(letter,teams,p,readOnly,act){
   act=act||{results:{}};
-  const allDone=GM.every((_,mi)=>p.results&&p.results[`${letter}_${mi}`]);
-  const matches=GM.map(([hi,ai],mi)=>{
+  const allDone=gmOf(letter).every((_,mi)=>p.results&&p.results[`${letter}_${mi}`]);
+  const matches=gmOf(letter).map(([hi,ai],mi)=>{
     const key=`${letter}_${mi}`,r=p.results&&p.results[key],ar=act.results&&act.results[key];
     const dis=(readOnly||locked)?'disabled':'';
     const ok=ar&&r===ar,wrong=ar&&r&&r!==ar;
@@ -801,7 +817,7 @@ function renderPredsSummary(s){
   const act=getActual();
   let consensusRows='';
   Object.entries(GROUPS).forEach(([letter,teams])=>{
-    GM.forEach(([hi,ai],mi)=>{
+    gmOf(letter).forEach(([hi,ai],mi)=>{
       const key=`${letter}_${mi}`;
       const ar=act.results&&act.results[key];
       if(!ar)return;
@@ -853,7 +869,7 @@ function actualGroupCard(letter,teams,act,admin){
         onchange="setActualScore('${letter}',${parseInt(key.split('_')[1])},'${side}',this.value)"
         style="width:32px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:700;text-align:center;padding:2px 0;outline:none">`
     :`<span style="width:32px;display:inline-block;text-align:center;font-size:13px;font-weight:700;color:var(--text)">${val??'–'}</span>`;
-  const matches=GM.map(([hi,ai],mi)=>{
+  const matches=gmOf(letter).map(([hi,ai],mi)=>{
     const key=`${letter}_${mi}`,r=act.results&&act.results[key];
     const sc=act.scores&&act.scores[key];
     const selW=r==='W',selT=r==='T',selL=r==='L';
@@ -867,7 +883,7 @@ function actualGroupCard(letter,teams,act,admin){
       <span class="mteam away ${selL?'bold':''}" style="font-size:11px">${teams[ai]} ${flag(teams[ai])}</span>
     </div>`;
   }).join('');
-  const done=GM.every((_,mi)=>act.results&&act.results[`${letter}_${mi}`]);
+  const done=gmOf(letter).every((_,mi)=>act.results&&act.results[`${letter}_${mi}`]);
   return`<div class="gcard"><div class="ghead"><div class="gletter">G${letter}</div>
     <div class="gteams-list">${teams.map(t=>flag(t)+' '+t).join(' · ')}</div>
     <div class="g-check">${done?'✓':''}</div></div>
@@ -895,7 +911,7 @@ function setActualResult(letter,mi,val){
 }
 function calcStandingsFull(letter,act){
   const teams=GROUPS[letter],st=teams.map(t=>({name:t,mp:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
-  GM.forEach(([hi,ai],mi)=>{
+  gmOf(letter).forEach(([hi,ai],mi)=>{
     const key=`${letter}_${mi}`,r=act.results&&act.results[key],sc=act.scores&&act.scores[key];
     if(!r)return;
     st[hi].mp++;st[ai].mp++;
@@ -986,7 +1002,7 @@ function setActualKoTp(val){updateActual(a=>{a.ko.tp=val||null;});renderResults(
 function buildMatchLookup(){
   const lk={};
   Object.entries(GROUPS).forEach(([letter,teams])=>{
-    GM.forEach(([hi,ai],mi)=>{
+    gmOf(letter).forEach(([hi,ai],mi)=>{
       lk[`${teams[hi]}|${teams[ai]}`]={letter,mi,swap:false};
       lk[`${teams[ai]}|${teams[hi]}`]={letter,mi,swap:true};
     });
@@ -1240,103 +1256,78 @@ function importScores(event){
 // All group stage matches with UTC times (Eesti suveaeg = UTC+3)
 // Format: [group, matchIndex, dateUTC, timeUTC, venue, city]
 const SCHEDULE = [
-  // Päev 1 - 11. juuni
-  ['A',0,'2026-06-11','20:00','Estadio Azteca','Mexico City'],
-  ['B',0,'2026-06-11','23:00','BMO Field','Toronto'],
-  // Päev 2 - 12. juuni
-  ['C',0,'2026-06-12','00:00','SoFi Stadium','Los Angeles'],
-  ['D',0,'2026-06-12','20:00','MetLife Stadium','New York'],
-  ['E',0,'2026-06-12','23:00','AT&T Stadium','Dallas'],
-  // Päev 3 - 13. juuni
-  ['F',0,'2026-06-13','00:00','Levi\'s Stadium','San Jose'],
-  ['A',1,'2026-06-13','20:00','Estadio BBVA','Monterrey'],
-  ['G',0,'2026-06-13','23:00','Hard Rock Stadium','Miami'],
-  // Päev 4 - 14. juuni
-  ['H',0,'2026-06-14','00:00','Rose Bowl','Los Angeles'],
-  ['B',1,'2026-06-14','20:00','BC Place','Vancouver'],
-  ['I',0,'2026-06-14','23:00','Mercedes-Benz Stadium','Atlanta'],
-  // Päev 5 - 15. juuni
-  ['J',0,'2026-06-15','00:00','Arrowhead Stadium','Kansas City'],
-  ['C',1,'2026-06-15','20:00','Estadio Akron','Guadalajara'],
-  ['K',0,'2026-06-15','23:00','Gillette Stadium','Boston'],
-  // Päev 6 - 16. juuni
-  ['L',0,'2026-06-16','00:00','Lumen Field','Seattle'],
-  ['D',1,'2026-06-16','20:00','MetLife Stadium','New York'],
-  ['E',1,'2026-06-16','23:00','NRG Stadium','Houston'],
-  // Päev 7 - 17. juuni
-  ['F',1,'2026-06-17','00:00','SoFi Stadium','Los Angeles'],
-  ['G',1,'2026-06-17','20:00','Hard Rock Stadium','Miami'],
-  ['H',1,'2026-06-17','23:00','AT&T Stadium','Dallas'],
-  // Päev 8 - 18. juuni
-  ['I',1,'2026-06-18','00:00','Mercedes-Benz Stadium','Atlanta'],
-  ['J',1,'2026-06-18','20:00','Estadio Azteca','Mexico City'],
-  ['K',1,'2026-06-18','23:00','BC Place','Vancouver'],
-  // Päev 9 - 19. juuni
-  ['L',1,'2026-06-19','00:00','Levi\'s Stadium','San Jose'],
-  ['A',2,'2026-06-19','20:00','Estadio Azteca','Mexico City'],
-  ['B',2,'2026-06-19','23:00','BMO Field','Toronto'],
-  // Päev 10 - 20. juuni
-  ['C',2,'2026-06-20','00:00','Rose Bowl','Los Angeles'],
-  ['D',2,'2026-06-20','20:00','AT&T Stadium','Dallas'],
-  ['E',2,'2026-06-20','23:00','Arrowhead Stadium','Kansas City'],
-  // Päev 11 - 21. juuni
-  ['F',2,'2026-06-21','00:00','Lumen Field','Seattle'],
-  ['G',2,'2026-06-21','20:00','MetLife Stadium','New York'],
-  ['H',2,'2026-06-21','23:00','Estadio BBVA','Monterrey'],
-  // Päev 12 - 22. juuni
-  ['I',2,'2026-06-22','00:00','Gillette Stadium','Boston'],
-  ['J',2,'2026-06-22','20:00','Estadio Akron','Guadalajara'],
-  ['K',2,'2026-06-22','23:00','NRG Stadium','Houston'],
-  // Päev 13 - 23. juuni
-  ['L',2,'2026-06-23','00:00','SoFi Stadium','Los Angeles'],
-  ['A',3,'2026-06-23','20:00','Estadio BBVA','Monterrey'],
-  ['B',3,'2026-06-23','23:00','BC Place','Vancouver'],
-  // Päev 14 - 24. juuni
-  ['C',3,'2026-06-24','00:00','Estadio Akron','Guadalajara'],
-  ['D',3,'2026-06-24','20:00','Lumen Field','Seattle'],
-  ['E',3,'2026-06-24','23:00','Mercedes-Benz Stadium','Atlanta'],
-  // Päev 15 - 25. juuni
-  ['F',3,'2026-06-25','00:00','Hard Rock Stadium','Miami'],
-  ['G',3,'2026-06-25','20:00','AT&T Stadium','Dallas'],
-  ['H',3,'2026-06-25','23:00','Rose Bowl','Los Angeles'],
-  // Päev 16 - 26. juuni
-  ['I',3,'2026-06-26','00:00','Arrowhead Stadium','Kansas City'],
-  ['J',3,'2026-06-26','20:00','Estadio Azteca','Mexico City'],
-  ['K',3,'2026-06-26','23:00','Gillette Stadium','Boston'],
-  // Päev 17 - 27. juuni
-  ['L',3,'2026-06-27','00:00','NRG Stadium','Houston'],
-  ['A',4,'2026-06-27','20:00','Estadio Azteca','Mexico City'],
-  ['A',5,'2026-06-27','20:00','Estadio BBVA','Monterrey'],
-  // Päev 18 - 28. juuni
-  ['B',4,'2026-06-28','20:00','BMO Field','Toronto'],
-  ['B',5,'2026-06-28','20:00','BC Place','Vancouver'],
-  ['C',4,'2026-06-28','23:00','SoFi Stadium','Los Angeles'],
-  // Päev 19 - 29. juuni
-  ['C',5,'2026-06-29','00:00','Rose Bowl','Los Angeles'],
-  ['D',4,'2026-06-29','20:00','MetLife Stadium','New York'],
-  ['D',5,'2026-06-29','20:00','AT&T Stadium','Dallas'],
-  // Päev 20 - 30. juuni
-  ['E',4,'2026-06-30','20:00','Arrowhead Stadium','Kansas City'],
-  ['E',5,'2026-06-30','20:00','NRG Stadium','Houston'],
-  ['F',4,'2026-06-30','23:00','Levi\'s Stadium','San Jose'],
-  // Päev 21 - 1. juuli
-  ['F',5,'2026-07-01','00:00','Lumen Field','Seattle'],
-  ['G',4,'2026-07-01','20:00','Hard Rock Stadium','Miami'],
-  ['G',5,'2026-07-01','20:00','Mercedes-Benz Stadium','Atlanta'],
-  // Päev 22 - 2. juuli
-  ['H',4,'2026-07-02','20:00','Estadio Akron','Guadalajara'],
-  ['H',5,'2026-07-02','20:00','Estadio BBVA','Monterrey'],
-  ['I',4,'2026-07-02','23:00','Gillette Stadium','Boston'],
-  // Päev 23 - 3. juuli
-  ['I',5,'2026-07-03','00:00','Mercedes-Benz Stadium','Atlanta'],
-  ['J',4,'2026-07-03','20:00','Estadio Azteca','Mexico City'],
-  ['J',5,'2026-07-03','20:00','Estadio Akron','Guadalajara'],
-  // Päev 24 - 4. juuli
-  ['K',4,'2026-07-04','20:00','MetLife Stadium','New York'],
-  ['K',5,'2026-07-04','20:00','AT&T Stadium','Dallas'],
-  ['L',4,'2026-07-04','23:00','SoFi Stadium','Los Angeles'],
-  // Päev 25 - 5. juuli
-  ['L',5,'2026-07-05','00:00','Rose Bowl','Los Angeles'],
+  ['A',0,'2026-06-11','19:00','','Mexico City'],
+  ['A',1,'2026-06-12','02:00','','Guadalajara'],
+  ['A',2,'2026-06-18','16:00','','Atlanta'],
+  ['A',3,'2026-06-19','01:00','','Guadalajara'],
+  ['A',4,'2026-06-25','01:00','','Mexico City'],
+  ['A',5,'2026-06-25','01:00','','Monterrey'],
+  ['B',0,'2026-06-12','19:00','','Toronto'],
+  ['B',1,'2026-06-13','19:00','','San Francisco'],
+  ['B',2,'2026-06-18','19:00','','Los Angeles'],
+  ['B',3,'2026-06-18','22:00','','Vancouver'],
+  ['B',4,'2026-06-24','19:00','','Vancouver'],
+  ['B',5,'2026-06-24','19:00','','Seattle'],
+  ['C',0,'2026-06-13','22:00','','New York'],
+  ['C',1,'2026-06-14','01:00','','Boston'],
+  ['C',2,'2026-06-19','22:00','','Boston'],
+  ['C',3,'2026-06-20','00:30','','Philadelphia'],
+  ['C',4,'2026-06-24','22:00','','Miami'],
+  ['C',5,'2026-06-24','22:00','','Atlanta'],
+  ['D',0,'2026-06-13','01:00','','Los Angeles'],
+  ['D',1,'2026-06-14','04:00','','Vancouver'],
+  ['D',2,'2026-06-19','19:00','','Seattle'],
+  ['D',3,'2026-06-20','03:00','','San Francisco'],
+  ['D',4,'2026-06-26','02:00','','Los Angeles'],
+  ['D',5,'2026-06-26','02:00','','San Francisco'],
+  ['E',0,'2026-06-14','17:00','','Houston'],
+  ['E',1,'2026-06-14','23:00','','Philadelphia'],
+  ['E',2,'2026-06-20','20:00','','Toronto'],
+  ['E',3,'2026-06-21','00:00','','Kansas City'],
+  ['E',4,'2026-06-25','20:00','','Philadelphia'],
+  ['E',5,'2026-06-25','20:00','','New York'],
+  ['F',0,'2026-06-14','20:00','','Dallas'],
+  ['F',1,'2026-06-15','02:00','','Monterrey'],
+  ['F',2,'2026-06-20','17:00','','Houston'],
+  ['F',3,'2026-06-21','04:00','','Monterrey'],
+  ['F',4,'2026-06-25','23:00','','Dallas'],
+  ['F',5,'2026-06-25','23:00','','Kansas City'],
+  ['G',0,'2026-06-15','19:00','','Seattle'],
+  ['G',1,'2026-06-16','01:00','','Los Angeles'],
+  ['G',2,'2026-06-21','19:00','','Los Angeles'],
+  ['G',3,'2026-06-22','01:00','','Vancouver'],
+  ['G',4,'2026-06-27','03:00','','Seattle'],
+  ['G',5,'2026-06-27','03:00','','Vancouver'],
+  ['H',0,'2026-06-15','16:00','','Atlanta'],
+  ['H',1,'2026-06-15','22:00','','Miami'],
+  ['H',2,'2026-06-21','16:00','','Atlanta'],
+  ['H',3,'2026-06-21','22:00','','Miami'],
+  ['H',4,'2026-06-27','00:00','','Houston'],
+  ['H',5,'2026-06-27','00:00','','Guadalajara'],
+  ['I',0,'2026-06-16','19:00','','New York'],
+  ['I',1,'2026-06-16','22:00','','Boston'],
+  ['I',2,'2026-06-22','21:00','','Philadelphia'],
+  ['I',3,'2026-06-23','00:00','','New York'],
+  ['I',4,'2026-06-26','19:00','','Boston'],
+  ['I',5,'2026-06-26','19:00','','Toronto'],
+  ['J',0,'2026-06-17','01:00','','Kansas City'],
+  ['J',1,'2026-06-17','04:00','','San Francisco'],
+  ['J',2,'2026-06-22','17:00','','Dallas'],
+  ['J',3,'2026-06-23','03:00','','San Francisco'],
+  ['J',4,'2026-06-28','02:00','','Kansas City'],
+  ['J',5,'2026-06-28','02:00','','Dallas'],
+  ['K',0,'2026-06-17','17:00','','Houston'],
+  ['K',1,'2026-06-18','02:00','','Mexico City'],
+  ['K',2,'2026-06-23','17:00','','Houston'],
+  ['K',3,'2026-06-24','02:00','','Guadalajara'],
+  ['K',4,'2026-06-27','23:30','','Miami'],
+  ['K',5,'2026-06-27','23:30','','Atlanta'],
+  ['L',0,'2026-06-17','20:00','','Dallas'],
+  ['L',1,'2026-06-17','23:00','','Toronto'],
+  ['L',2,'2026-06-23','20:00','','Boston'],
+  ['L',3,'2026-06-23','23:00','','Toronto'],
+  ['L',4,'2026-06-27','21:00','','New York'],
+  ['L',5,'2026-06-27','21:00','','Philadelphia'],
 ];
 
 // Convert UTC datetime to Estonian time string (UTC+3 in summer)
@@ -1377,7 +1368,7 @@ function renderSchedule() {
     const eeDate = toEeDate(dateUTC, timeUTC);
     const eeTime = toEeTime(dateUTC, timeUTC);
     const teams = GROUPS[grp];
-    const [hi, ai] = GM[mi];
+    const [hi, ai] = gmOf(grp)[mi];
     const key = `${grp}_${mi}`;
     const result = act.results && act.results[key];
     const scores = act.scores && act.scores[key];
