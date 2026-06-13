@@ -210,6 +210,8 @@ nav{display:flex;gap:2px;flex:1}
 .sched-wtl.W{background:var(--green4);color:var(--green3);border:1px solid var(--green)}
 .sched-wtl.T{background:var(--yellowbg);color:var(--yellow);border:1px solid var(--yellow)}
 .sched-wtl.L{background:var(--redbg);color:#f85149;border:1px solid var(--red)}
+.sched-pred-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;font-size:12px;padding:3px 6px;flex-shrink:0;line-height:1}
+.sched-pred-btn:hover{border-color:var(--text2);color:var(--text)}
 .btn-fetch-off{background:var(--bg3)!important;color:var(--text2)!important;border:1px solid var(--border)!important;cursor:not-allowed!important;opacity:.55}
 .btn-fetch-on{background:var(--red)!important;color:#fff!important;border:none!important;cursor:pointer!important;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(218,54,51,.4)}70%{box-shadow:0 0 0 6px rgba(218,54,51,0)}}
@@ -1471,6 +1473,7 @@ function renderSchedule() {
       }
 
       const wtlHtml = result ? `<div class="sched-wtl ${result}">${result}</div>` : `<div class="sched-wtl" style="min-width:20px"></div>`;
+      const predBtn = `<button class="sched-pred-btn" onclick="showMatchPredictions('${grp}',${mi},'${esc(home)}','${esc(away)}')" title="Vaata ennustusi">👥</button>`;
 
       html += `<div class="sched-match ${cls}" title="${venue}, ${city}">
         <div class="sched-grp">G${grp}</div>
@@ -1480,6 +1483,7 @@ function renderSchedule() {
           ${scoreHtml}
           <span class="sched-team">${away} ${flag(away)}</span>
         </div>
+        ${predBtn}
         ${wtlHtml}
       </div>`;
     });
