@@ -272,6 +272,12 @@ nav{display:flex;gap:2px;flex:1}
         <button class="btn btn-s" style="flex:1" onclick="exportScores()">📤 Ekspordi skoorid</button>
       </div>
       <div class="row" style="margin-top:6px">
+        <label class="btn btn-s" style="flex:1;text-align:center;cursor:pointer">
+          📊 Impordi skoorid (kõik mängijad)
+          <input type="file" accept=".json" style="display:none" onchange="importScores(event)">
+        </label>
+      </div>
+      <div class="row" style="margin-top:6px">
         <button class="btn btn-s" style="flex:1;border-color:var(--red);color:#f85149" onclick="resetActualResults()">🗑 Nulli tulemused (lähtesta)</button>
       </div>
       <div id="import-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px"></div>
@@ -1278,15 +1284,22 @@ function importScores(event){
       const data=JSON.parse(e.target.result);
       if(data.type!=='wc2026_scores'){status.textContent='❌ Vigane fail';status.style.color='var(--red)';return;}
       const s=getAll();
-      // merge players (keep own preds, add others)
+      // merge players (add any new names)
       data.players.forEach(n=>{if(!s.players.includes(n))s.players.push(n);});
-      Object.entries(data.preds||{}).forEach(([n,p])=>{if(n!==me)s.preds[n]=p;});
+      // Admin: kirjuta KÕIK mängijad üle (ka enda oma). Tavakasutaja: säilita enda ennustus.
+      const adminImport=isAdmin();
+      Object.entries(data.preds||{}).forEach(([n,p])=>{if(adminImport||n!==me)s.preds[n]=p;});
       // merge actual results
       if(data.actual)s.actual=data.actual;
       saveAll(s);
-      // Activate viewer mode - locks predictions & results editing
-      setViewerMode(true);
-      status.textContent=`✓ Skoorid uuendatud — ${data.players.length} mängijat · Vaaterežiim aktiveeritud`;status.style.color='var(--green3)';
+      if(adminImport){
+        // Admin jääb muutmisrežiimi — vaaterežiimi ei aktiveerita
+        status.textContent=`✓ Imporditud ${data.players.length} mängijat (admin – muutmisrežiim)`;status.style.color='var(--green3)';
+      }else{
+        // Tavakasutaja: aktiveeri vaaterežiim (lukustab ennustused ja tulemused)
+        setViewerMode(true);
+        status.textContent=`✓ Skoorid uuendatud — ${data.players.length} mängijat · Vaaterežiim aktiveeritud`;status.style.color='var(--green3)';
+      }
       renderLogin();
     }catch{status.textContent='❌ Faili lugemine ebaõnnestus';status.style.color='var(--red)';}
   };
