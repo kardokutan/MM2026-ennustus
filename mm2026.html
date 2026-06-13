@@ -624,12 +624,12 @@ function setResult(letter,mi,val){
     // Eemalda thirds-ist meeskonnad, kes on nüüd oma grupi top 2-s
     if(p.thirds&&p.thirds.length>0){
       const top2=new Set(Object.keys(GROUPS).flatMap(g=>{const st=calcStandings(g,p);return[st[0]?.name,st[1]?.name].filter(Boolean);}));
-      const before=p.thirds.length;
       p.thirds=p.thirds.filter(t=>!top2.has(t));
-      if(p.thirds.length<before)clearKoFrom(p,'r32');
     }
+    // Eemalda ainult need play-off valikud, mis enam ei kehti — ülejäänud säilivad
+    pruneInvalidKo(p);
   });
-  renderGroups();renderThirdPlace();renderKoRound('r32');updateProgress();
+  renderGroups();renderThirdPlace();renderKnockout();updateProgress();
 }
 
 // ═══════ KNOCKOUT ═══════
@@ -657,8 +657,8 @@ function renderThirdPlace(){
 function toggleThird(team){
   if(locked||(isViewerMode()&&!isAdmin()))return;
   updateMe(p=>{if(!p.thirds)p.thirds=[];const i=p.thirds.indexOf(team);
-    if(i>=0){p.thirds.splice(i,1);clearKoFrom(p,'r32');}else if(p.thirds.length<8)p.thirds.push(team);});
-  renderThirdPlace();renderKoRound('r32');updateProgress();
+    if(i>=0){p.thirds.splice(i,1);pruneInvalidKo(p);}else if(p.thirds.length<8)p.thirds.push(team);});
+  renderThirdPlace();renderKnockout();updateProgress();
 }
 function r32Pairs(p){return R32.map(([a,b])=>[resolveSlot(a,p),resolveSlot(b,p)]);}
 function nextPairs(rnd,p){const prev={r16:'r32',qf:'r16',sf:'qf'}[rnd],pw=p.ko[prev]||[],n={r16:8,qf:4,sf:2}[rnd];
@@ -691,6 +691,34 @@ function pickKo(round,mi,team){
     p.ko[round][mi]=same?null:team;if(!same)clearKoDownstream(p,round,mi);});
   renderKoRound(round);const nxt={r32:'r16',r16:'qf',qf:'sf',sf:'final'}[round];
   if(nxt==='final')renderFinal();else renderKoRound(nxt);if(round==='sf')renderFinal();updateProgress();
+}
+// Eemaldab ainult need play-off valikud, mis enam ei kehti (meeskond pole enam selles paaris).
+// Säilitab kõik valikud, mida grupimuutus ei mõjutanud. Tagastab true, kui midagi muudeti.
+function pruneInvalidKo(p){
+  let changed=false;
+  // 1/16: kontrolli iga valik tegelikult lahendatud paari vastu
+  const r32pairs=r32Pairs(p);
+  if(!p.ko.r32)p.ko.r32=[];
+  r32pairs.forEach(([tA,tB],i)=>{
+    const w=p.ko.r32[i];
+    if(w&&w!==tA&&w!==tB){p.ko.r32[i]=null;changed=true;}
+  });
+  // Järgnevad voorud: võitja peab olema eelmise vooru valitud meeskondade hulgas
+  const chain=[['r16','r32',8],['qf','r16',4],['sf','qf',2]];
+  chain.forEach(([rnd,prev,n])=>{
+    if(!p.ko[rnd])p.ko[rnd]=[];
+    const pw=p.ko[prev]||[];
+    for(let i=0;i<n;i++){
+      const a=pw[i*2],b=pw[i*2+1],w=p.ko[rnd][i];
+      if(w&&w!==a&&w!==b){p.ko[rnd][i]=null;changed=true;}
+    }
+  });
+  // Finaal: peab olema üks kahest poolfinaali võitjast
+  const sf=p.ko.sf||[];
+  if(p.ko.final&&p.ko.final!==sf[0]&&p.ko.final!==sf[1]){p.ko.final=null;changed=true;}
+  // 3. koha mäng: peab olema üks kahest poolfinaali kaotajast (lahendatakse finalistide järgi)
+  // Lihtsuse mõttes jäta tp alles kui mõlemad poolfinaalid täidetud; muidu nulli kui kehtetu
+  return changed;
 }
 function clearKoDownstream(p,round,mi){
   const seq=['r32','r16','qf','sf'];let idx=seq.indexOf(round),midx=mi;
