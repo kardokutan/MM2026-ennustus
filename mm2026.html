@@ -533,7 +533,8 @@ function addPlayer(){
   inp.value='';login(name);
 }
 function login(name){
-  me=name;locked=new Date()>=TOURNAMENT_START||isViewerMode();
+  // Admin saab alati muuta (lukk ei kehti); teistele lukk pärast turniiri algust või vaaterežiimis
+  me=name;locked=isAdmin()?false:(new Date()>=TOURNAMENT_START||isViewerMode());
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('hchip').textContent=name;
@@ -615,7 +616,7 @@ function groupCard(letter,teams,p,readOnly,act){
   </div>`;
 }
 function setResult(letter,mi,val){
-  if(locked||isViewerMode())return;
+  if(locked||(isViewerMode()&&!isAdmin()))return;
   updateMe(p=>{
     if(!p.results)p.results={};
     const k=`${letter}_${mi}`;
@@ -654,7 +655,7 @@ function renderThirdPlace(){
     <div class="tpgrid">${items}</div></div>`;
 }
 function toggleThird(team){
-  if(locked||isViewerMode())return;
+  if(locked||(isViewerMode()&&!isAdmin()))return;
   updateMe(p=>{if(!p.thirds)p.thirds=[];const i=p.thirds.indexOf(team);
     if(i>=0){p.thirds.splice(i,1);clearKoFrom(p,'r32');}else if(p.thirds.length<8)p.thirds.push(team);});
   renderThirdPlace();renderKoRound('r32');updateProgress();
@@ -685,7 +686,7 @@ function renderKoRound(round){
   document.getElementById('ko-'+round).innerHTML=info+`<div class="ko-grid">${cards}</div>`;
 }
 function pickKo(round,mi,team){
-  if(locked||isViewerMode())return;
+  if(locked||(isViewerMode()&&!isAdmin()))return;
   updateMe(p=>{if(!p.ko[round])p.ko[round]=[];const same=p.ko[round][mi]===team;
     p.ko[round][mi]=same?null:team;if(!same)clearKoDownstream(p,round,mi);});
   renderKoRound(round);const nxt={r32:'r16',r16:'qf',qf:'sf',sf:'final'}[round];
@@ -733,8 +734,8 @@ function renderFinal(){
     ${!f1||!f2?`<div class="ko-info" style="margin-top:10px">⚠️ <strong>Täida poolfinaalid</strong></div>`:''}
   </div>`;
 }
-function pickTP(team){if(locked||isViewerMode())return;updateMe(p=>{p.ko.tp=p.ko.tp===team?null:team;});renderFinal();updateProgress();}
-function pickFinal(team){if(locked||isViewerMode())return;updateMe(p=>{p.ko.final=p.ko.final===team?null:team;});renderFinal();updateProgress();}
+function pickTP(team){if(locked||(isViewerMode()&&!isAdmin()))return;updateMe(p=>{p.ko.tp=p.ko.tp===team?null:team;});renderFinal();updateProgress();}
+function pickFinal(team){if(locked||(isViewerMode()&&!isAdmin()))return;updateMe(p=>{p.ko.final=p.ko.final===team?null:team;});renderFinal();updateProgress();}
 
 // ═══════ SCORE TAB ═══════
 function renderScore(){
