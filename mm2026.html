@@ -280,6 +280,9 @@ nav{display:flex;gap:2px;flex:1}
         </label>
       </div>
       <div class="row" style="margin-top:6px">
+        <button class="btn btn-g" style="flex:1" onclick="exportForGitHub()">💾 Ekspordi GitHubi jaoks (data.json)</button>
+      </div>
+      <div class="row" style="margin-top:6px">
         <button class="btn btn-s" style="flex:1" onclick="exportScores()">📤 Ekspordi skoorid</button>
       </div>
       <div class="row" style="margin-top:6px">
@@ -1276,6 +1279,17 @@ function exportScores(){
   a.href=url;a.download=`mm2026_skoorid_${new Date().toISOString().slice(0,10)}.json`;
   a.click();URL.revokeObjectURL(url);
 }
+function exportForGitHub(){
+  const s=getAll();
+  const data={type:'wc2026_scores',players:s.players,preds:s.preds,actual:s.actual,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='data.json';
+  a.click();URL.revokeObjectURL(url);
+  const status=document.getElementById('import-status');
+  if(status){status.innerHTML='✓ <b>data.json</b> laaditud alla — lae see GitHubi repo juurkausta (kirjuta vana üle)';status.style.color='var(--green3)';}
+}
 function resetActualResults(){
   if(!isAdmin())return;
   if(!confirm('Nulli kõik tegelikud tulemused (skoorid + play-off võitjad)? Mängijate ennustused jäävad alles. Pärast saad uuesti "Laadi tulemused" vajutada.'))return;
@@ -1558,9 +1572,48 @@ async function headerFetchResults() {
   }
 }
 
+// ═══════ GITHUB ANDMETE AUTOMAATNE LAADIMINE ═══════
+// Admin laeb data.json oma GitHubi repo'sse; äpp loeb selle igal avamisel.
+// Andmed ei sõltu enam ühe brauseri localStorage'ist.
+const GITHUB_DATA_URLS=[
+  'https://raw.githubusercontent.com/kardokutan/MM2026-ennustus/main/data.json',
+  'https://raw.githubusercontent.com/kardokutan/MM2026-ennustus/master/data.json',
+];
+async function loadFromGitHub(){
+  let data=null;
+  for(const url of GITHUB_DATA_URLS){
+    try{
+      const res=await fetch(url+'?t='+Date.now(),{cache:'no-store'});
+      if(!res.ok)continue;
+      const txt=await res.text();
+      const parsed=JSON.parse(txt);
+      if(parsed&&parsed.type==='wc2026_scores'){data=parsed;break;}
+    }catch{continue;}
+  }
+  if(!data)return false; // GitHubis pole faili või ühendus ebaõnnestus — kasuta localStorage'i
+  // Rakenda ainult kui GitHubi versioon on uuem (või esmakordne)
+  const lastApplied=localStorage.getItem('wc2026_gh_ts')||'';
+  const remoteTs=data.exported||'';
+  const adminActive=isAdmin();
+  // Admin muutmisrežiimis: ära kirjuta tema kohalikke muudatusi üle automaatselt
+  if(adminActive)return false;
+  if(remoteTs&&remoteTs===lastApplied)return false; // juba rakendatud, pole vaja midagi teha
+  const s=getAll();
+  (data.players||[]).forEach(n=>{if(!s.players.includes(n))s.players.push(n);});
+  Object.entries(data.preds||{}).forEach(([n,p])=>{s.preds[n]=p;});
+  if(data.actual)s.actual=data.actual;
+  saveAll(s);
+  localStorage.setItem('wc2026_gh_ts',remoteTs);
+  setViewerMode(true); // teised näevad seisu kirjutuskaitstuna
+  return true;
+}
+
 // ═══════ INIT ═══════
 updateAdminSections();
 renderLogin();
+// Proovi GitHubist värsket seisu laadida (ei blokeeri kuva)
+loadFromGitHub().then(updated=>{if(updated)renderLogin();}).catch(()=>{});
+
 </script>
 </body>
 </html>
