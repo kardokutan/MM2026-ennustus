@@ -15,6 +15,24 @@
   --blue:#388bfd;--r:8px;
   --yellow:#e3b341;--yellowbg:#2a1f00;
 }
+/* LIGHT THEME */
+body.light{
+  --bg:#f6f8fa;--bg2:#ffffff;--bg3:#eaeef2;--border:#d0d7de;
+  --green:#1a7f37;--green2:#1f883d;--green3:#1a7f37;--green4:#dafbe1;
+  --gold:#9a6700;--goldbg:#fff8c5;
+  --text:#1f2328;--text2:#59636e;
+  --red:#cf222e;--redbg:#ffebe9;
+  --blue:#0969da;
+  --yellow:#9a6700;--yellowbg:#fff8c5;
+}
+body{transition:background-color .2s,color .2s}
+body.light .login-box h1{background:linear-gradient(135deg,#1f2328 0%,#59636e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+body.light .p1{background:#dafbe1}
+body.light .p2{background:#ddf4ff}
+body.light .rank-2{background:#eaeef2}
+body.light .rank-3{background:#fff4e0}
+body.light .sched-match.live{background:#ffebe9}
+body.light .final-label{background:linear-gradient(90deg,#fff8c5,#fff4d6)}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 
 /* LOGIN */
@@ -57,6 +75,12 @@ nav{display:flex;gap:2px;flex:1}
 .header-r{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .chip{background:var(--green);color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
 .lock-badge{background:var(--red);color:#fff;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600;display:none}
+/* HAMBURGER (mobile menu toggle) */
+.hamburger{display:none;flex-direction:column;justify-content:center;gap:4px;width:40px;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:0;flex-shrink:0}
+.hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px;margin:0 auto;transition:transform .2s,opacity .2s}
+.hamburger.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
 
 /* PROGRESS */
 .prog-wrap{background:var(--bg3);border-bottom:1px solid var(--border);padding:6px 16px;display:flex;align-items:center;gap:12px}
@@ -226,14 +250,30 @@ nav{display:flex;gap:2px;flex:1}
 .xbtn:hover{color:var(--text)}
 .modal-body{padding:16px}
 
-@media(max-width:600px){
+@media(max-width:700px){
+  html,body{max-width:100%;overflow-x:hidden}
   .tab{padding:10px}
   .groups-grid,.actual-ko-grid{grid-template-columns:1fr}
-  header{gap:4px}
-  .logo{font-size:13px}
-  .nb{padding:5px 6px;font-size:11px}
-  .nb .bdg{display:none}
-  .header-r .btn{display:none}
+  /* header: rida1 = logo + hamburger; rida2 = nimi + lukk + Laadi tulemused; nav & Eksport/Vaheta menuusse */
+  header{flex-wrap:wrap;height:auto;min-height:50px;padding:8px 12px;gap:8px}
+  .logo{font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:1}
+  .hamburger{display:flex;order:2}
+  header::after{content:"";flex-basis:100%;height:0;order:3}
+  #hchip{order:4;flex-shrink:1;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
+  #hlock{order:5;flex-shrink:0}
+  #hdr-fetch-btn{order:6;flex-shrink:0;font-size:12px;padding:6px 10px}
+  #theme-btn{order:7;flex-shrink:0;font-size:12px;padding:6px 10px}
+  nav{order:10;flex-basis:100%;width:100%;flex-direction:column;gap:6px;display:none}
+  .header-r{order:11;flex-basis:100%;width:100%;flex-direction:column;align-items:stretch;gap:6px;display:none;border-top:1px solid var(--border);padding-top:8px}
+  header.menu-open nav,header.menu-open .header-r{display:flex}
+  .nb{width:100%;text-align:center;font-size:14px;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)}
+  .nb .bdg{display:inline-block;position:static;margin-left:6px}
+  .header-r .btn{display:block;width:100%;font-size:14px;padding:10px}
+  /* modal mahub vaiksele ekraanile */
+  .modal-bg{padding:8px}
+  .modal{max-height:94vh}
+  .modal-body{padding:12px}
+  .modal-body table td,.modal-body table th{padding:6px 6px!important}
   /* Ajakava mobiilis: tihedam, et meeskonnanimed mahuksid */
   .sched-match{gap:5px;padding:7px 8px}
   .sched-grp{min-width:18px;font-size:9px}
@@ -324,10 +364,12 @@ nav{display:flex;gap:2px;flex:1}
       <button class="nb" onclick="showTab('score',this)">Skoor</button>
       <button class="nb" onclick="showTab('results',this)">Tulemused</button>
     </nav>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menüü"><span></span><span></span><span></span></button>
+    <button class="btn btn-s btn-sm theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Vaheta hele/tume vaade">☀️ Hele</button>
+    <span class="chip" id="hchip"></span>
+    <span class="lock-badge" id="hlock">🔒 Lukus</span>
+    <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi lõppenud mängude tulemused">⬇ Laadi tulemused</button>
     <div class="header-r">
-      <span class="chip" id="hchip"></span>
-      <span class="lock-badge" id="hlock">🔒 Lukus</span>
-      <button class="btn btn-sm" id="hdr-fetch-btn" onclick="headerFetchResults()" style="display:none" title="Laadi lõppenud mängude tulemused">⬇ Laadi tulemused</button>
       <button class="btn btn-s btn-sm" onclick="exportPreds()" title="Ekspordi oma ennustused failina">⬆ Eksport</button>
       <button class="btn btn-s btn-sm" onclick="logout()">Vaheta</button>
     </div>
@@ -569,7 +611,7 @@ function login(name){
   }
 }
 function logout(){
-  me=null;
+  me=null;closeMenu();
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-screen').style.display='none';
   renderLogin();
@@ -577,6 +619,22 @@ function logout(){
 document.getElementById('new-name').addEventListener('keydown',e=>{if(e.key==='Enter')addPlayer();});
 
 // ═══════ NAV ═══════
+function toggleMenu(){
+  document.querySelector('header').classList.toggle('menu-open');
+  document.getElementById('hamburger').classList.toggle('open');
+}
+function closeMenu(){
+  document.querySelector('header').classList.remove('menu-open');
+  const h=document.getElementById('hamburger');if(h)h.classList.remove('open');
+}
+function applyTheme(light){
+  document.body.classList.toggle('light',!!light);
+  try{localStorage.setItem('wc2026_theme',light?'light':'dark');}catch{}
+  const b=document.getElementById('theme-btn');
+  if(b)b.textContent=light?'🌙 Tume':'☀️ Hele';
+}
+function toggleTheme(){applyTheme(!document.body.classList.contains('light'));}
+function initTheme(){applyTheme(localStorage.getItem('wc2026_theme')==='light');}
 function showTab(name,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
@@ -584,6 +642,7 @@ function showTab(name,btn){
   if(name==='score')renderScore();
   if(name==='results')renderResults();
   if(name==='schedule')renderSchedule();
+  closeMenu();
 }
 function showKo(round,btn){
   document.querySelectorAll('.kround').forEach(r=>r.classList.remove('active'));
@@ -1237,7 +1296,6 @@ function exportPreds(){
   a.href=url;a.download=`mm2026_${me.replace(/\s+/g,'_')}.json`;
   a.click();URL.revokeObjectURL(url);
 }
-
 function importPreds(event){
   const file=event.target.files[0];if(!file)return;
   const status=document.getElementById('import-status');
@@ -1257,7 +1315,6 @@ function importPreds(event){
   reader.readAsText(file);
   event.target.value='';
 }
-
 async function adminFetchResults(){
   const btn=document.getElementById('login-fetch-btn');
   const status=document.getElementById('login-fetch-status');
@@ -1269,7 +1326,6 @@ async function adminFetchResults(){
   else{status.textContent='❌ Ühendus ebaõnnestus';status.style.color='var(--red)';}
   btn.disabled=false;btn.textContent='⬇ Laadi tulemused';
 }
-
 function exportScores(){
   const s=getAll();
   const data={type:'wc2026_scores',players:s.players,preds:s.preds,actual:s.actual,exported:new Date().toISOString()};
@@ -1331,7 +1387,6 @@ function importScores(event){
   reader.readAsText(file);
   event.target.value='';
 }
-
 // ═══════ SCHEDULE DATA ═══════
 // All group stage matches with UTC times (Eesti suveaeg = UTC+3)
 // Format: [group, matchIndex, dateUTC, timeUTC, venue, city]
@@ -1409,7 +1464,6 @@ const SCHEDULE = [
   ['L',4,'2026-06-27','21:00','','New York'],
   ['L',5,'2026-06-27','21:00','','Philadelphia'],
 ];
-
 // Convert UTC datetime to Estonian time string (UTC+3 in summer)
 function toEeTime(dateStr, timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -1420,16 +1474,13 @@ function toEeTime(dateStr, timeStr) {
   const mm = String(ee.getUTCMinutes()).padStart(2,'0');
   return `${hh}:${mm}`;
 }
-
 function toEeDate(dateStr, timeStr) {
   const utc = new Date(`${dateStr}T${timeStr}:00Z`);
   const ee = new Date(utc.getTime() + 3 * 3600000);
   return ee.toISOString().slice(0,10);
 }
-
 const EE_MONTHS = ['jaan','veebr','märts','apr','mai','juuni','juuli','aug','sept','okt','nov','dets'];
 const EE_DAYS = ['P','E','T','K','N','R','L'];
-
 function formatEeDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00Z');
   const day = EE_DAYS[d.getUTCDay()];
@@ -1437,11 +1488,9 @@ function formatEeDate(dateStr) {
   const mon = EE_MONTHS[d.getUTCMonth()];
   return `${day} ${dd}. ${mon}`;
 }
-
 function renderSchedule() {
   const act = getActual();
   const now = new Date();
-
   // Group matches by Estonian date
   const byDay = {};
   SCHEDULE.forEach(([grp, mi, dateUTC, timeUTC, venue, city]) => {
@@ -1456,36 +1505,29 @@ function renderSchedule() {
     const matchUtc = new Date(`${dateUTC}T${timeUTC}:00Z`).getTime();
     const isLive = now.getTime() > matchUtc && now.getTime() < matchUtc + 110*60000;
     const isDone = !!result;
-
     if (!byDay[eeDate]) byDay[eeDate] = [];
     byDay[eeDate].push({grp, mi, eeTime, teams, hi, ai, key, result, scores, isLive, isDone, venue, city, matchUtc});
   });
-
   const sortedDates = Object.keys(byDay).sort();
   let html = '';
-
   // Find today/next upcoming date to highlight
   const todayStr = new Date(now.getTime() + 3*3600000).toISOString().slice(0,10);
-
   sortedDates.forEach(dateStr => {
     const matches = byDay[dateStr];
     const isToday = dateStr === todayStr;
     const matchCount = matches.length;
     const doneCount = matches.filter(m => m.isDone).length;
-
     html += `<div class="sched-day">
       <div class="sched-day-hdr">
         ${isToday ? '📍 ' : ''}${formatEeDate(dateStr)}
         <span>${doneCount > 0 ? `${doneCount}/${matchCount} peetud` : `${matchCount} mängu`}</span>
         ${isToday ? '<span style="background:#1a3a1a;border-color:var(--green);color:var(--green3)">Täna</span>' : ''}
       </div>`;
-
     matches.forEach(({grp, mi, eeTime, teams, hi, ai, key, result, scores, isLive, isDone, venue, city}) => {
       const home = teams[hi], away = teams[ai];
       const cls = isLive ? 'live' : isDone ? 'finished' : '';
       const timeCls = isLive ? 'live-t' : '';
       const timeLabel = isLive ? '⚽ LIVE' : eeTime;
-
       let scoreHtml = '';
       if (scores && scores.h !== null && scores.a !== null) {
         scoreHtml = `<div class="sched-score has-score">${scores.h} : ${scores.a}</div>`;
@@ -1494,10 +1536,8 @@ function renderSchedule() {
       } else {
         scoreHtml = `<div class="sched-score">vs</div>`;
       }
-
       const wtlHtml = result ? `<div class="sched-wtl ${result}">${result}</div>` : `<div class="sched-wtl" style="min-width:20px"></div>`;
       const predBtn = `<button class="sched-pred-btn" onclick="showMatchPredictions('${grp}',${mi},'${esc(home)}','${esc(away)}')" title="Vaata ennustusi">👥</button>`;
-
       html += `<div class="sched-match ${cls}" title="${venue}, ${city}">
         <div class="sched-grp">G${grp}</div>
         <div class="sched-time ${timeCls}">${timeLabel}</div>
@@ -1510,20 +1550,16 @@ function renderSchedule() {
         ${wtlHtml}
       </div>`;
     });
-
     html += `</div>`;
   });
-
   document.getElementById('schedule-content').innerHTML =
     `<h2 style="margin-bottom:16px;font-size:17px">📅 Ajakava <span style="font-size:12px;font-weight:400;color:var(--text2)">— ajad Eesti aja järgi (EEST UTC+3)</span></h2>${html}`;
 }
-
 // ═══════ HEADER FETCH BUTTON ═══════
 function updateFetchBtn() {
   const btn = document.getElementById('hdr-fetch-btn');
   if (!btn) return;
   btn.style.display = 'inline-block';
-
   // Check if there are finished matches without results
   const now = new Date();
   const act = getActual();
@@ -1535,7 +1571,6 @@ function updateFetchBtn() {
       if (!act.results || !act.results[key]) hasPending = true;
     }
   });
-
   if (hasPending) {
     btn.className = 'btn btn-sm btn-fetch-on';
     btn.textContent = '⬇ Laadi tulemused';
@@ -1548,15 +1583,12 @@ function updateFetchBtn() {
     btn.title = 'Kõik lõppenud mängude tulemused on olemas';
   }
 }
-
 async function headerFetchResults() {
   const btn = document.getElementById('hdr-fetch-btn');
   btn.disabled = true;
   btn.textContent = '⏳ Laen...';
   btn.className = 'btn btn-sm btn-s';
-
   const updated = await fetchFromOpenfootball();
-
   if (updated > 0) {
     btn.textContent = `✓ ${updated} uuendatud`;
     btn.className = 'btn btn-sm btn-s';
@@ -1571,7 +1603,6 @@ async function headerFetchResults() {
     setTimeout(updateFetchBtn, 2500);
   }
 }
-
 // ═══════ GITHUB ANDMETE AUTOMAATNE LAADIMINE ═══════
 // Admin laeb data.json oma GitHubi repo'sse; äpp loeb selle igal avamisel.
 // Andmed ei sõltu enam ühe brauseri localStorage'ist.
@@ -1607,13 +1638,12 @@ async function loadFromGitHub(){
   setViewerMode(true); // teised näevad seisu kirjutuskaitstuna
   return true;
 }
-
 // ═══════ INIT ═══════
+initTheme();
 updateAdminSections();
 renderLogin();
 // Proovi GitHubist värsket seisu laadida (ei blokeeri kuva)
 loadFromGitHub().then(updated=>{if(updated)renderLogin();}).catch(()=>{});
-
 </script>
 </body>
 </html>
