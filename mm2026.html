@@ -27,6 +27,7 @@ body.light{
 }
 body{transition:background-color .2s,color .2s}
 body.light .login-box h1{background:linear-gradient(135deg,#1f2328 0%,#59636e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+body.light .mteam.bold{color:#1f2328}
 body.light .p1{background:#dafbe1}
 body.light .p2{background:#ddf4ff}
 body.light .rank-2{background:#eaeef2}
@@ -876,7 +877,52 @@ function renderScore(){
       </div>
     </div>`;
   }).join('');
-  document.getElementById('score-content').innerHTML=`${noActNote}<h2 style="margin-bottom:14px;font-size:17px">🏆 Edetabel</h2><div class="lb-grid">${cards}</div>${renderScoreChart(ranked)}${renderPredsSummary(s)}`;
+  document.getElementById('score-content').innerHTML=`${noActNote}<h2 style="margin-bottom:14px;font-size:17px">🏆 Edetabel</h2><div class="lb-grid">${cards}</div>${renderScoreChart(ranked)}${renderPredsSummary(s)}${renderStreakTable(s)}`;
+}
+
+// ═══════ STREAK — pikim õigete ennustuste seeria ═══════
+function renderStreakTable(s){
+  const act=getActual();
+  if(!hasAnyActual()||!s.players.length)return'';
+  // Grupimängud kronoloogilises järjekorras, millel on tegelik tulemus
+  const ordered=SCHEDULE
+    .map(([grp,mi,d,t])=>({key:`${grp}_${mi}`,time:new Date(`${d}T${t}:00Z`).getTime()}))
+    .filter(o=>act.results&&act.results[o.key])
+    .sort((a,b)=>a.time-b.time);
+  if(!ordered.length)return'';
+  const rows=s.players.map(n=>{
+    const pr=(s.preds[n]||freshPreds()).results||{};
+    let best=0,cur=0;
+    ordered.forEach(({key})=>{
+      if(pr[key]&&pr[key]===act.results[key]){cur++;if(cur>best)best=cur;}
+      else cur=0;
+    });
+    // praegune seeria (lõpeb viimase mänguga)
+    let curEnd=0;
+    for(let i=ordered.length-1;i>=0;i--){const key=ordered[i].key;if(pr[key]&&pr[key]===act.results[key])curEnd++;else break;}
+    return{name:n,best,cur:curEnd};
+  }).filter(r=>r.best>0)
+    .sort((a,b)=>b.best-a.best||b.cur-a.cur||a.name.localeCompare(b.name))
+    .slice(0,5);
+  if(!rows.length)return'';
+  let prevB=-1,prevRank=0;
+  const list=rows.map((r,i)=>{
+    const rank=r.best!==prevB?i+1:prevRank;prevB=r.best;prevRank=rank;
+    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
+    const isMe=r.name===me;
+    const ongoing=r.cur===r.best&&r.cur>0;
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border)">
+      <div style="width:26px;text-align:center;font-size:14px;flex-shrink:0">${medal}</div>
+      <div style="flex:1;min-width:0;font-size:13px;font-weight:${isMe?700:500};color:${isMe?'var(--green3)':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}${isMe?' <span style="font-size:10px;color:var(--green3)">(mina)</span>':''}</div>
+      <div style="font-size:11px;color:var(--text2);flex-shrink:0">${ongoing?'🔥 käib':''}</div>
+      <div style="font-size:18px;font-weight:800;color:var(--green3);min-width:46px;text-align:right;flex-shrink:0">${r.best}<span style="font-size:10px;color:var(--text2);font-weight:400"> õiget</span></div>
+    </div>`;
+  }).join('');
+  return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:20px">
+    <h3 style="font-size:15px;margin-bottom:6px">🔥 Pikim õigete seeria (streak)</h3>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Mängude toimumise järjekorras järjest õigesti ennustatud grupimängude tulemused. 🔥 = seeria kestab praegu.</p>
+    ${list}
+  </div>`;
 }
 
 // ═══════ SCORE CHART ═══════
@@ -926,7 +972,10 @@ function renderPredsSummary(s){
 
   // Group match consensus
   const act=getActual();
-  let consensusRows='';
+  // Mängu toimumisaeg (UTC) iga grupimängu kohta — sorteerimiseks
+  const schedTime={};
+  SCHEDULE.forEach(([grp,mi,d,t])=>{schedTime[`${grp}_${mi}`]=new Date(`${d}T${t}:00Z`).getTime();});
+  const consensusList=[];
   Object.entries(GROUPS).forEach(([letter,teams])=>{
     gmOf(letter).forEach(([hi,ai],mi)=>{
       const key=`${letter}_${mi}`;
@@ -937,7 +986,7 @@ function renderPredsSummary(s){
       const total=s.players.length,w=counts.W,t=counts.T,l=counts.L;
       if(!w&&!t&&!l)return;
       const seg=(val,color,label)=>val?`<div style="flex:${val};background:${color};height:100%;display:flex;align-items:center;justify-content:center"><span style="font-size:10px;font-weight:700;color:#fff">${val>0&&(val/total)>0.12?label:''}</span></div>`:'';
-      consensusRows+=`<div style="margin-bottom:6px">
+      consensusList.push({time:schedTime[key]||0,html:`<div style="margin-bottom:6px">
         <div style="display:flex;justify-content:space-between;margin-bottom:2px">
           <span style="font-size:11px">${flag(teams[hi])} ${teams[hi]} vs ${flag(teams[ai])} ${teams[ai]}</span>
           <span style="font-size:10px;color:${ar?'var(--green3)':'var(--text2)'}">${ar?'Tulemus: '+ar:''}</span>
@@ -945,9 +994,12 @@ function renderPredsSummary(s){
         <div style="display:flex;height:18px;border-radius:4px;overflow:hidden;gap:1px">
           ${seg(w,'var(--green)','W')}${seg(t,'#7a6a00','T')}${seg(l,'var(--red)','L')}${seg(counts.none,'var(--bg3)','')}
         </div>
-      </div>`;
+      </div>`});
     });
   });
+  // Kõige hilisemad mängud üles, varem toimunud alla
+  consensusList.sort((a,b)=>b.time-a.time);
+  const consensusRows=consensusList.map(x=>x.html).join('');
 
   return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px">
     <h3 style="font-size:15px;margin-bottom:14px">🔮 Ennustuste kokkuvõte</h3>
