@@ -237,6 +237,9 @@ nav{display:flex;gap:2px;flex:1}
 .sched-wtl.L{background:var(--redbg);color:#f85149;border:1px solid var(--red)}
 .sched-pred-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;font-size:12px;padding:3px 6px;flex-shrink:0;line-height:1}
 .sched-pred-btn:hover{border-color:var(--text2);color:var(--text)}
+.sched-verdict{font-size:11px;font-weight:700;flex-shrink:0;letter-spacing:.3px}
+.sched-verdict.ok{color:var(--green3)}
+.sched-verdict.no{color:#f85149}
 .btn-fetch-off{background:var(--bg3)!important;color:var(--text2)!important;border:1px solid var(--border)!important;cursor:not-allowed!important;opacity:.55}
 .btn-fetch-on{background:var(--red)!important;color:#fff!important;border:none!important;cursor:pointer!important;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(218,54,51,.4)}70%{box-shadow:0 0 0 6px rgba(218,54,51,0)}}
@@ -284,6 +287,7 @@ nav{display:flex;gap:2px;flex:1}
   .sched-score{min-width:42px;font-size:13px;padding:3px 5px}
   .sched-pred-btn{font-size:11px;padding:3px 5px}
   .sched-wtl{font-size:9px;padding:2px 4px;min-width:18px}
+  .sched-verdict{font-size:9px;letter-spacing:0}
 }
 </style>
 </head>
@@ -1566,7 +1570,8 @@ function renderSchedule() {
   // Find today/next upcoming date to highlight
   const todayStr = new Date(now.getTime() + 3*3600000).toISOString().slice(0,10);
   sortedDates.forEach(dateStr => {
-    const matches = byDay[dateStr];
+    // Päevasisesed mängud kellaaja (toimumisaja) järgi kasvavalt
+    const matches = byDay[dateStr].slice().sort((a, b) => a.matchUtc - b.matchUtc);
     const isToday = dateStr === todayStr;
     const matchCount = matches.length;
     const doneCount = matches.filter(m => m.isDone).length;
@@ -1596,7 +1601,7 @@ function renderSchedule() {
         const myPred = myP.results && myP.results[key];
         if (myPred) {
           const correct = myPred === result;
-          verdictHtml = `<span style="font-size:11px;font-weight:700;flex-shrink:0;color:${correct ? 'var(--green3)' : '#f85149'}">${correct ? 'ÕIGE' : 'VALE'}</span>`;
+          verdictHtml = `<span class="sched-verdict ${correct ? 'ok' : 'no'}">${correct ? 'ÕIGE' : 'VALE'}</span>`;
         }
       }
       const predBtn = `<button class="sched-pred-btn" onclick="showMatchPredictions('${grp}',${mi},'${esc(home)}','${esc(away)}')" title="Vaata ennustusi">👥</button>`;
