@@ -1542,6 +1542,7 @@ function formatEeDate(dateStr) {
 }
 function renderSchedule() {
   const act = getActual();
+  const myP = myPreds(); // sisseloginud mängija ennustused
   const now = new Date();
   // Group matches by Estonian date
   const byDay = {};
@@ -1589,6 +1590,15 @@ function renderSchedule() {
         scoreHtml = `<div class="sched-score">vs</div>`;
       }
       const wtlHtml = result ? `<div class="sched-wtl ${result}">${result}</div>` : `<div class="sched-wtl" style="min-width:20px"></div>`;
+      // ÕIGE / VALE sisseloginud mängija vaates
+      let verdictHtml = '';
+      if (result) {
+        const myPred = myP.results && myP.results[key];
+        if (myPred) {
+          const correct = myPred === result;
+          verdictHtml = `<span style="font-size:11px;font-weight:700;flex-shrink:0;color:${correct ? 'var(--green3)' : '#f85149'}">${correct ? 'ÕIGE' : 'VALE'}</span>`;
+        }
+      }
       const predBtn = `<button class="sched-pred-btn" onclick="showMatchPredictions('${grp}',${mi},'${esc(home)}','${esc(away)}')" title="Vaata ennustusi">👥</button>`;
       html += `<div class="sched-match ${cls}" title="${venue}, ${city}">
         <div class="sched-grp">G${grp}</div>
@@ -1598,6 +1608,7 @@ function renderSchedule() {
           ${scoreHtml}
           <span class="sched-team">${away} ${flag(away)}</span>
         </div>
+        ${verdictHtml}
         ${predBtn}
         ${wtlHtml}
       </div>`;
