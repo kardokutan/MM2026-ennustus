@@ -288,6 +288,11 @@ nav{display:flex;gap:2px;flex:1}
   .sched-pred-btn{font-size:11px;padding:3px 5px}
   .sched-wtl{font-size:9px;padding:2px 4px;min-width:18px}
   .sched-verdict{font-size:9px;letter-spacing:0}
+  /* Tulemuste lehe punktitabel mahub mobiili */
+  .std-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .std-table{font-size:10px!important}
+  .std-table th,.std-table td{padding:4px 2px!important}
+  .std-table th:nth-child(2),.std-table td:nth-child(2){white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis}
 }
 </style>
 </head>
@@ -614,6 +619,17 @@ function login(name){
     const scoreBtn=document.querySelector('.nb[onclick*="score"]');
     if(scoreBtn)showTab('score',scoreBtn);
   }
+  // Mobiilis ennustajale: avaleht = Ajakava, kerime viimase peetud mängu keskele
+  else if(window.innerWidth<=700&&!isAdmin()){
+    const schedBtn=document.querySelector('.nb[onclick*="schedule"]');
+    if(schedBtn){showTab('schedule',schedBtn);scrollToSchedAnchor();}
+  }
+}
+function scrollToSchedAnchor(){
+  setTimeout(()=>{
+    const el=document.getElementById('sched-anchor');
+    if(el)el.scrollIntoView({block:'center',behavior:'auto'});
+  },80);
 }
 function logout(){
   me=null;closeMenu();
@@ -1115,7 +1131,7 @@ function renderActualStandings(act){
     }).join('');
     return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
       <div style="background:var(--bg3);padding:7px 10px;font-size:12px;font-weight:700;color:var(--gold);border-bottom:1px solid var(--border)">Group ${letter}</div>
-      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+      <div style="overflow-x:auto"><table class="std-table" style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr>
           <th style="${thStyle}">#</th><th style="${thStyle};text-align:left">Team</th>
           <th style="${thStyle}">MP</th><th style="${thStyle}">W</th><th style="${thStyle}">D</th><th style="${thStyle}">L</th>
@@ -1127,7 +1143,7 @@ function renderActualStandings(act){
   }).join('');
   return`<div class="results-section">
     <h3>Group Standings</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px">${tables}</div>
+    <div class="std-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px">${tables}</div>
   </div>`;
 }
 function renderActualKo(act,admin){
@@ -1566,6 +1582,13 @@ function renderSchedule() {
     byDay[eeDate].push({grp, mi, eeTime, teams, hi, ai, key, result, scores, isLive, isDone, venue, city, matchUtc});
   });
   const sortedDates = Object.keys(byDay).sort();
+  // Leia ankurmäng: viimane peetud (done) mäng; kui ühtegi pole, siis järgmine tulev mäng
+  let anchorKey = null, anchorBest = -Infinity, nextKey = null, nextBest = Infinity;
+  Object.values(byDay).flat().forEach(m => {
+    if (m.isDone && m.matchUtc > anchorBest) { anchorBest = m.matchUtc; anchorKey = m.key; }
+    if (!m.isDone && m.matchUtc >= now.getTime() && m.matchUtc < nextBest) { nextBest = m.matchUtc; nextKey = m.key; }
+  });
+  if (!anchorKey) anchorKey = nextKey;
   let html = '';
   // Find today/next upcoming date to highlight
   const todayStr = new Date(now.getTime() + 3*3600000).toISOString().slice(0,10);
@@ -1605,7 +1628,8 @@ function renderSchedule() {
         }
       }
       const predBtn = `<button class="sched-pred-btn" onclick="showMatchPredictions('${grp}',${mi},'${esc(home)}','${esc(away)}')" title="Vaata ennustusi">👥</button>`;
-      html += `<div class="sched-match ${cls}" title="${venue}, ${city}">
+      const anchorAttr = key === anchorKey ? ' id="sched-anchor"' : '';
+      html += `<div class="sched-match ${cls}"${anchorAttr} title="${venue}, ${city}">
         <div class="sched-grp">G${grp}</div>
         <div class="sched-time ${timeCls}">${timeLabel}</div>
         <div class="sched-teams">
