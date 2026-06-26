@@ -614,15 +614,16 @@ function login(name){
   if(isViewerMode())document.getElementById('hlock').textContent='👁 Vaaterežiim';
   renderAll();
   updateFetchBtn();
-  // If viewer mode, go straight to score tab
-  if(isViewerMode()){
-    const scoreBtn=document.querySelector('.nb[onclick*="score"]');
-    if(scoreBtn)showTab('score',scoreBtn);
-  }
-  // Mobiilis ennustajale: avaleht = Ajakava, kerime viimase peetud mängu keskele
-  else if(window.innerWidth<=700&&!isAdmin()){
+  // Mobiilis ennustajale: avaleht = Ajakava, kerime viimati toimunud mängu keskele.
+  // NB: see käib enne vaaterežiimi-kontrolli, sest tavamängija on GitHubist laetult vaaterežiimis.
+  if(window.innerWidth<=700&&!isAdmin()){
     const schedBtn=document.querySelector('.nb[onclick*="schedule"]');
     if(schedBtn){showTab('schedule',schedBtn);scrollToSchedAnchor();}
+  }
+  // Arvutis vaaterežiimis: ava skoori vaheleht
+  else if(isViewerMode()){
+    const scoreBtn=document.querySelector('.nb[onclick*="score"]');
+    if(scoreBtn)showTab('score',scoreBtn);
   }
 }
 function scrollToSchedAnchor(){
@@ -1582,11 +1583,13 @@ function renderSchedule() {
     byDay[eeDate].push({grp, mi, eeTime, teams, hi, ai, key, result, scores, isLive, isDone, venue, city, matchUtc});
   });
   const sortedDates = Object.keys(byDay).sort();
-  // Leia ankurmäng: viimane peetud (done) mäng; kui ühtegi pole, siis järgmine tulev mäng
+  // Leia ankurmäng: viimati toimunud mäng (hiliseim, mille algusaeg on möödas).
+  // Kui turniir pole veel alanud, siis esimene tulev mäng.
+  const nowMs = now.getTime();
   let anchorKey = null, anchorBest = -Infinity, nextKey = null, nextBest = Infinity;
   Object.values(byDay).flat().forEach(m => {
-    if (m.isDone && m.matchUtc > anchorBest) { anchorBest = m.matchUtc; anchorKey = m.key; }
-    if (!m.isDone && m.matchUtc >= now.getTime() && m.matchUtc < nextBest) { nextBest = m.matchUtc; nextKey = m.key; }
+    if (m.matchUtc <= nowMs && m.matchUtc > anchorBest) { anchorBest = m.matchUtc; anchorKey = m.key; }
+    if (m.matchUtc > nowMs && m.matchUtc < nextBest) { nextBest = m.matchUtc; nextKey = m.key; }
   });
   if (!anchorKey) anchorKey = nextKey;
   let html = '';
