@@ -484,13 +484,21 @@ function gmOf(letter){return GM_BY_GROUP[letter];}
 // Üldine 6-elemendiline massiiv ainult loendamiseks (mi indeks), kus meeskonnapaar pole oluline
 const GM = [0,1,2,3,4,5].map(i=>[0,0]);
 
-// R32 bracket: 16 matches [slotA, slotB]
+// R32 bracket — official FIFA 2026 structure (matches 73-88), reordered nii et
+// binaarpuu-ahel (i*2) toidab 1/8, veerand- ja poolfinaali ametlikus järjekorras.
 const R32 = [
-  ['W-A','T-0'],['R-B','W-C'],['T-1','W-D'],['R-A','R-C'],
-  ['W-E','T-2'],['R-F','W-G'],['T-3','W-H'],['R-E','R-G'],
-  ['W-I','T-4'],['R-J','W-K'],['T-5','W-L'],['R-I','R-K'],
-  ['R-D','T-6'],['W-B','W-J'],['R-H','T-7'],['W-F','R-L'],
+  ['W-E','TH-E'],['W-I','TH-I'],['R-A','R-B'],['W-F','R-C'],
+  ['R-K','R-L'],['W-H','R-J'],['W-D','TH-D'],['W-G','TH-G'],
+  ['W-C','R-F'],['R-E','R-I'],['W-A','TH-A'],['W-L','TH-L'],
+  ['W-J','R-H'],['R-D','R-G'],['W-B','TH-B'],['W-K','TH-K'],
 ];
+// Ametlik mängunumber iga R32 indeksi kohta (uus järjekord)
+const R32_MATCHNO=[74,77,73,75,83,84,81,82,76,78,79,80,86,88,85,87];
+// Grupivõitja -> veerg Annex C kolmandate kohtade jaotuses
+const TH_COLS={A:0,B:1,D:2,E:3,G:4,I:5,K:6,L:7};
+// Annex C (495 kombinatsiooni): võti=8 sorteeritud 3. koha gruppi, väärtus=8 kolmanda koha gruppi veergudele A,B,D,E,G,I,K,L
+const _TA="EFGHIJKLEJIFHGLKDFGHIJKLHGIDJFLKDEGHIJKLEJIDHGLKDEFHIJKLEJIDHFLKDEFGIJKLEGIDJFLKDEFGHJKLEGJDHFLKDEFGHIKLEGIDHFLKDEFGHIJLEGJDHFLIDEFGHIJKEGJDHFIKCFGHIJKLHGICJFLKCEGHIJKLEJICHGLKCEFHIJKLEJICHFLKCEFGIJKLEGICJFLKCEFGHJKLEGJCHFLKCEFGHIKLEGICHFLKCEFGHIJLEGJCHFLICEFGHIJKEGJCHFIKCDGHIJKLHGICJDLKCDFHIJKLCJIDHFLKCDFGIJKLCGIDJFLKCDFGHJKLCGJDHFLKCDFGHIKLCGIDHFLKCDFGHIJLCGJDHFLICDFGHIJKCGJDHFIKCDEHIJKLEJICHDLKCDEGIJKLEGICJDLKCDEGHJKLEGJCHDLKCDEGHIKLEGICHDLKCDEGHIJLEGJCHDLICDEGHIJKEGJCHDIKCDEFIJKLCJEDIFLKCDEFHJKLCJEDHFLKCDEFHIKLCEIDHFLKCDEFHIJLCJEDHFLICDEFHIJKCJEDHFIKCDEFGJKLCGEDJFLKCDEFGIKLCGEDIFLKCDEFGIJLCGEDJFLICDEFGIJKCGEDJFIKCDEFGHKLCGEDHFLKCDEFGHJLCGJDHFLECDEFGHJKCGJDHFEKCDEFGHILCGEDHFLICDEFGHIKCGEDHFIKCDEFGHIJCGJDHFEIBFGHIJKLHJBFIGLKBEGHIJKLEJIBHGLKBEFHIJKLEJBFIHLKBEFGIJKLEJBFIGLKBEFGHJKLEJBFHGLKBEFGHIKLEGBFIHLKBEFGHIJLEJBFHGLIBEFGHIJKEJBFHGIKBDGHIJKLHJBDIGLKBDFHIJKLHJBDIFLKBDFGIJKLIGBDJFLKBDFGHJKLHGBDJFLKBDFGHIKLHGBDIFLKBDFGHIJLHGBDJFLIBDFGHIJKHGBDJFIKBDEHIJKLEJBDIHLKBDEGIJKLEJBDIGLKBDEGHJKLEJBDHGLKBDEGHIKLEGBDIHLKBDEGHIJLEJBDHGLIBDEGHIJKEJBDHGIKBDEFIJKLEJBDIFLKBDEFHJKLEJBDHFLKBDEFHIKLEIBDHFLKBDEFHIJLEJBDHFLIBDEFHIJKEJBDHFIKBDEFGJKLEGBDJFLKBDEFGIKLEGBDIFLKBDEFGIJLEGBDJFLIBDEFGIJKEGBDJFIKBDEFGHKLEGBDHFLKBDEFGHJLHGBDJFLEBDEFGHJKHGBDJFEKBDEFGHILEGBDHFLIBDEFGHIKEGBDHFIKBDEFGHIJHGBDJFEIBCGHIJKLHJBCIGLKBCFHIJKLHJBCIFLKBCFGIJKLIGBCJFLKBCFGHJKLHGBCJFLKBCFGHIKLHGBCIFLKBCFGHIJLHGBCJFLIBCFGHIJKHGBCJFIKBCEHIJKLEJBCIHLKBCEGIJKLEJBCIGLKBCEGHJKLEJBCHGLKBCEGHIKLEGBCIHLKBCEGHIJLEJBCHGLIBCEGHIJKEJBCHGIKBCEFIJKLEJBCIFLKBCEFHJKLEJBCHFLKBCEFHIKLEIBCHFLKBCEFHIJLEJBCHFLIBCEFHIJKEJBCHFIKBCEFGJKLEGBCJFLKBCEFGIKLEGBCIFLKBCEFGIJLEGBCJFLIBCEFGIJKEGBCJFIKBCEFGHKLEGBCHFLKBCEFGHJLHGBCJFLEBCEFGHJKHGBCJFEKBCEFGHILEGBCHFLIBCEFGHIKEGBCHFIKBCEFGHIJHGBCJFEIBCDHIJKLHJBCIDLKBCDGIJKLIGBCJDLKBCDGHJKLHGBCJDLKBCDGHIKLHGBCIDLKBCDGHIJLHGBCJDLIBCDGHIJKHGBCJDIKBCDFIJKLCJBDIFLKBCDFHJKLCJBDHFLKBCDFHIKLCIBDHFLKBCDFHIJLCJBDHFLIBCDFHIJKCJBDHFIKBCDFGJKLCGBDJFLKBCDFGIKLCGBDIFLKBCDFGIJLCGBDJFLIBCDFGIJKCGBDJFIKBCDFGHKLCGBDHFLKBCDFGHJLCGBDHFLJBCDFGHJKHGBCJFDKBCDFGHILCGBDHFLIBCDFGHIKCGBDHFIKBCDFGHIJHGBCJFDIBCDEIJKLEJBCIDLKBCDEHJKLEJBCHDLKBCDEHIKLEIBCHDLKBCDEHIJLEJBCHDLIBCDEHIJKEJBCHDIKBCDEGJKLEGBCJDLKBCDEGIKLEGBCIDLKBCDEGIJLEGBCJDLIBCDEGIJKEGBCJDIKBCDEGHKLEGBCHDLKBCDEGHJLHGBCJDLEBCDEGHJKHGBCJDEKBCDEGHILEGBCHDLIBCDEGHIKEGBCHDIKBCDEGHIJHGBCJDEIBCDEFJKLCJBDEFLKBCDEFIKLCEBDIFLKBCDEFIJLCJBDEFLIBCDEFIJKCJBDEFIKBCDEFHKLCEBDHFLKBCDEFHJLCJBDHFLEBCDEFHJKCJBDHFEKBCDEFHILCEBDHFLIBCDEFHIKCEBDHFIKBCDEFHIJCJBDHFEIBCDEFGKLCGBDEFLKBCDEFGJLCGBDJFLEBCDEFGJKCGBDJFEKBCDEFGILCGBDEFLIBCDEFGIKCGBDEFIKBCDEFGIJCGBDJFEIBCDEFGHLCGBDHFLEBCDEFGHKCGBDHFEKBCDEFGHJHGBCJFDEBCDEFGHICGBDHFEIAFGHIJKLHJIFAGLKAEGHIJKLEJIAHGLKAEFHIJKLEJIFAHLKAEFGIJKLEJIFAGLKAEFGHJKLEGJFAHLKAEFGHIKLEGIFAHLKAEFGHIJLEGJFAHLIAEFGHIJKEGJFAHIKADGHIJKLHJIDAGLKADFHIJKLHJIDAFLKADFGIJKLIGJDAFLKADFGHJKLHGJDAFLKADFGHIKLHGIDAFLKADFGHIJLHGJDAFLIADFGHIJKHGJDAFIKADEHIJKLEJIDAHLKADEGIJKLEJIDAGLKADEGHJKLEGJDAHLKADEGHIKLEGIDAHLKADEGHIJLEGJDAHLIADEGHIJKEGJDAHIKADEFIJKLEJIDAFLKADEFHJKLHJEDAFLKADEFHIKLHEIDAFLKADEFHIJLHJEDAFLIADEFHIJKHJEDAFIKADEFGJKLEGJDAFLKADEFGIKLEGIDAFLKADEFGIJLEGJDAFLIADEFGIJKEGJDAFIKADEFGHKLHGEDAFLKADEFGHJLHGJDAFLEADEFGHJKHGJDAFEKADEFGHILHGEDAFLIADEFGHIKHGEDAFIKADEFGHIJHGJDAFEIACGHIJKLHJICAGLKACFHIJKLHJICAFLKACFGIJKLIGJCAFLKACFGHJKLHGJCAFLKACFGHIKLHGICAFLKACFGHIJLHGJCAFLIACFGHIJKHGJCAFIKACEHIJKLEJICAHLKACEGIJKLEJICAGLKACEGHJKLEGJCAHLKACEGHIKLEGICAHLKACEGHIJLEGJCAHLIACEGHIJKEGJCAHIKACEFIJKLEJICAFLKACEFHJKLHJECAFLKACEFHIKLHEICAFLKACEFHIJLHJECAFLIACEFHIJKHJECAFIKACEFGJKLEGJCAFLKACEFGIKLEGICAFLKACEFGIJLEGJCAFLIACEFGIJKEGJCAFIKACEFGHKLHGECAFLKACEFGHJLHGJCAFLEACEFGHJKHGJCAFEKACEFGHILHGECAFLIACEFGHIKHGECAFIKACEFGHIJHGJCAFEIACDHIJKLHJICADLKACDGIJKLIGJCADLKACDGHJKLHGJCADLKACDGHIKLHGICADLKACDGHIJLHGJCADLIACDGHIJKHGJCADIKACDFIJKLCJIDAFLKACDFHJKLHJFCADLKACDFHIKLHFICADLKACDFHIJLHJFCADLIACDFHIJKHJFCADIKACDFGJKLCGJDAFLKACDFGIKLCGIDAFLKACDFGIJLCGJDAFLIACDFGIJKCGJDAFIKACDFGHKLHGFCADLKACDFGHJLCGJDAFLHACDFGHJKHGJCAFDKACDFGHILHGFCADLIACDFGHIKHGFCADIKACDFGHIJHGJCAFDIACDEIJKLEJICADLKACDEHJKLHJECADLKACDEHIKLHEICADLKACDEHIJLHJECADLIACDEHIJKHJECADIKACDEGJKLEGJCADLKACDEGIKLEGICADLKACDEGIJLEGJCADLIACDEGIJKEGJCADIKACDEGHKLHGECADLKACDEGHJLHGJCADLEACDEGHJKHGJCADEKACDEGHILHGECADLIACDEGHIKHGECADIKACDEGHIJHGJCADEIACDEFJKLCJEDAFLKACDEFIKLCEIDAFLKACDEFIJLCJEDAFLIACDEFIJKCJEDAFIKACDEFHKLHEFCADLKACDEFHJLHJFCADLEACDEFHJKHJECAFDKACDEFHILHEFCADLIACDEFHIKHEFCADIKACDEFHIJHJECAFDIACDEFGKLCGEDAFLKACDEFGJLCGJDAFLEACDEFGJKCGJDAFEKACDEFGILCGEDAFLIACDEFGIKCGEDAFIKACDEFGIJCGJDAFEIACDEFGHLHGFCADLEACDEFGHKHGECAFDKACDEFGHJHGJCAFDEACDEFGHIHGECAFDIABGHIJKLHJBAIGLKABFHIJKLHJBAIFLKABFGIJKLIJBFAGLKABFGHJKLHJBFAGLKABFGHIKLHGBAIFLKABFGHIJLHJBFAGLIABFGHIJKHJBFAGIKABEHIJKLEJBAIHLKABEGIJKLEJBAIGLKABEGHJKLEJBAHGLKABEGHIKLEGBAIHLKABEGHIJLEJBAHGLIABEGHIJKEJBAHGIKABEFIJKLEJBAIFLKABEFHJKLEJBFAHLKABEFHIKLEIBFAHLKABEFHIJLEJBFAHLIABEFHIJKEJBFAHIKABEFGJKLEJBFAGLKABEFGIKLEGBAIFLKABEFGIJLEJBFAGLIABEFGIJKEJBFAGIKABEFGHKLEGBFAHLKABEFGHJLHJBFAGLEABEFGHJKHJBFAGEKABEFGHILEGBFAHLIABEFGHIKEGBFAHIKABEFGHIJHJBFAGEIABDHIJKLIJBDAHLKABDGIJKLIJBDAGLKABDGHJKLHJBDAGLKABDGHIKLIGBDAHLKABDGHIJLHJBDAGLIABDGHIJKHJBDAGIKABDFIJKLIJBDAFLKABDFHJKLHJBDAFLKABDFHIKLHIBDAFLKABDFHIJLHJBDAFLIABDFHIJKHJBDAFIKABDFGJKLFJBDAGLKABDFGIKLIGBDAFLKABDFGIJLFJBDAGLIABDFGIJKFJBDAGIKABDFGHKLHGBDAFLKABDFGHJLHGBDAFLJABDFGHJKHGBDAFJKABDFGHILHGBDAFLIABDFGHIKHGBDAFIKABDFGHIJHGBDAFIJABDEIJKLEJBAIDLKABDEHJKLEJBDAHLKABDEHIKLEIBDAHLKABDEHIJLEJBDAHLIABDEHIJKEJBDAHIKABDEGJKLEJBDAGLKABDEGIKLEGBAIDLKABDEGIJLEJBDAGLIABDEGIJKEJBDAGIKABDEGHKLEGBDAHLKABDEGHJLHJBDAGLEABDEGHJKHJBDAGEKABDEGHILEGBDAHLIABDEGHIKEGBDAHIKABDEGHIJHJBDAGEIABDEFJKLEJBDAFLKABDEFIKLEIBDAFLKABDEFIJLEJBDAFLIABDEFIJKEJBDAFIKABDEFHKLHEBDAFLKABDEFHJLHJBDAFLEABDEFHJKHJBDAFEKABDEFHILHEBDAFLIABDEFHIKHEBDAFIKABDEFHIJHJBDAFEIABDEFGKLEGBDAFLKABDEFGJLEGBDAFLJABDEFGJKEGBDAFJKABDEFGILEGBDAFLIABDEFGIKEGBDAFIKABDEFGIJEGBDAFIJABDEFGHLHGBDAFLEABDEFGHKHGBDAFEKABDEFGHJHGBDAFEJABDEFGHIHGBDAFEIABCHIJKLIJBCAHLKABCGIJKLIJBCAGLKABCGHJKLHJBCAGLKABCGHIKLIGBCAHLKABCGHIJLHJBCAGLIABCGHIJKHJBCAGIKABCFIJKLIJBCAFLKABCFHJKLHJBCAFLKABCFHIKLHIBCAFLKABCFHIJLHJBCAFLIABCFHIJKHJBCAFIKABCFGJKLCJBFAGLKABCFGIKLIGBCAFLKABCFGIJLCJBFAGLIABCFGIJKCJBFAGIKABCFGHKLHGBCAFLKABCFGHJLHGBCAFLJABCFGHJKHGBCAFJKABCFGHILHGBCAFLIABCFGHIKHGBCAFIKABCFGHIJHGBCAFIJABCEIJKLEJBAICLKABCEHJKLEJBCAHLKABCEHIKLEIBCAHLKABCEHIJLEJBCAHLIABCEHIJKEJBCAHIKABCEGJKLEJBCAGLKABCEGIKLEGBAICLKABCEGIJLEJBCAGLIABCEGIJKEJBCAGIKABCEGHKLEGBCAHLKABCEGHJLHJBCAGLEABCEGHJKHJBCAGEKABCEGHILEGBCAHLIABCEGHIKEGBCAHIKABCEGHIJHJBCAGEIABCEFJKLEJBCAFLKABCEFIKLEIBCAFLKABCEFIJLEJBCAFLIABCEFIJKEJBCAFIKABCEFHKLHEBCAFLKABCEFHJLHJBCAFLEABCEFHJKHJBCAFEKABCEFHILHEBCAFLIABCEFHIKHEBCAFIKABCEFHIJHJBCAFEIABCEFGKLEGBCAFLKABCEFGJLEGBCAFLJABCEFGJKEGBCAFJKABCEFGILEGBCAFLIABCEFGIKEGBCAFIKABCEFGIJEGBCAFIJABCEFGHLHGBCAFLEABCEFGHKHGBCAFEKABCEFGHJHGBCAFEJABCEFGHIHGBCAFEIABCDIJKLIJBCADLKABCDHJKLHJBCADLKABCDHIKLHIBCADLKABCDHIJLHJBCADLIABCDHIJKHJBCADIKABCDGJKLCJBDAGLKABCDGIKLIGBCADLKABCDGIJLCJBDAGLIABCDGIJKCJBDAGIKABCDGHKLHGBCADLKABCDGHJLHGBCADLJABCDGHJKHGBCADJKABCDGHILHGBCADLIABCDGHIKHGBCADIKABCDGHIJHGBCADIJABCDFJKLCJBDAFLKABCDFIKLCIBDAFLKABCDFIJLCJBDAFLIABCDFIJKCJBDAFIKABCDFHKLHFBCADLKABCDFHJLCJBDAFLHABCDFHJKHJBCAFDKABCDFHILHFBCADLIABCDFHIKHFBCADIKABCDFHIJHJBCAFDIABCDFGKLCGBDAFLKABCDFGJLCGBDAFLJABCDFGJKCGBDAFJKABCDFGILCGBDAFLIABCDFGIKCGBDAFIKABCDFGIJCGBDAFIJABCDFGHLCGBDAFLHABCDFGHKHGBCAFDKABCDFGHJHGBCAFDJABCDFGHIHGBCAFDIABCDEJKLEJBCADLKABCDEIKLEIBCADLKABCDEIJLEJBCADLIABCDEIJKEJBCADIKABCDEHKLHEBCADLKABCDEHJLHJBCADLEABCDEHJKHJBCADEKABCDEHILHEBCADLIABCDEHIKHEBCADIKABCDEHIJHJBCADEIABCDEGKLEGBCADLKABCDEGJLEGBCADLJABCDEGJKEGBCADJKABCDEGILEGBCADLIABCDEGIKEGBCADIKABCDEGIJEGBCADIJABCDEGHLHGBCADLEABCDEGHKHGBCADEKABCDEGHJHGBCADEJABCDEGHIHGBCADEIABCDEFKLCEBDAFLKABCDEFJLCJBDAFLEABCDEFJKCJBDAFEKABCDEFILCEBDAFLIABCDEFIKCEBDAFIKABCDEFIJCJBDAFEIABCDEFHLHFBCADLEABCDEFHKHEBCAFDKABCDEFHJHJBCAFDEABCDEFHIHEBCAFDIABCDEFGLCGBDAFLEABCDEFGKCGBDAFEKABCDEFGJCGBDAFEJABCDEFGICGBDAFEIABCDEFGHHGBCAFDE";
+const THIRD_ALLOC={};for(let _i=0;_i<_TA.length;_i+=16){THIRD_ALLOC[_TA.slice(_i,_i+8)]=_TA.slice(_i+8,_i+16);}
 
 const RND_NAMES = {r32:'1/16 finaal',r16:'1/8 finaal',qf:'Veerandfinaal',sf:'Poolfinaal'};
 const RND_PTS   = {r32:3, r16:5, qf:8, sf:10, final:20};
@@ -541,10 +549,22 @@ function getQ(p){const q={};Object.keys(GROUPS).forEach(g=>{const st=calcStandin
 function resolveSlot(slot,p){
   const q=getQ(p);
   if(slot.startsWith('W-')||slot.startsWith('R-'))return q[slot]||slot;
+  if(slot.startsWith('TH-'))return resolveThird(slot.slice(3),(p.thirds||[]))||`3. koht (${slot.slice(3)})`;
   if(slot.startsWith('T-')){const i=parseInt(slot.slice(2));return(p.thirds||[])[i]||`3. koht #${i+1}`;}
   return slot;
 }
-function isSlot(s){return!s||s.startsWith('W-')||s.startsWith('R-')||s.startsWith('T-')||s.startsWith('3. koht');}
+function isSlot(s){return!s||s.startsWith('W-')||s.startsWith('R-')||s.startsWith('TH-')||s.startsWith('T-')||s.startsWith('3. koht');}
+// Leia meeskonna grupp
+function thirdGroupOf(team){for(const g of Object.keys(GROUPS))if(GROUPS[g].includes(team))return g;return null;}
+// Annex C abil: millise meeskonna saab grupivõitja 'col' (nt 'E') vastaseks valitud 8 kolmanda koha hulgast
+function resolveThird(col,thirds){
+  if(!thirds||thirds.length<8)return null;
+  const byGroup={};thirds.forEach(t=>{const g=thirdGroupOf(t);if(g)byGroup[g]=t;});
+  const key=Object.keys(byGroup).sort().join('');
+  const alloc=THIRD_ALLOC[key];
+  if(!alloc)return null;
+  return byGroup[alloc[TH_COLS[col]]]||null;
+}
 function flag(t){return FLAGS[t]||'';}
 function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function nameHue(n){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;return h;}
@@ -1150,11 +1170,18 @@ function renderActualStandings(act){
 function renderActualKo(act,admin){
   const rounds=['r32','r16','qf','sf'];
   const dis=admin?'':'disabled';
+  const actQ=getActQ(act),bestThirds=actBestThirds(act);
   const koHtml=rounds.map(rnd=>{
     const n={r32:16,r16:8,qf:4,sf:2}[rnd];
-    const matches=Array.from({length:n},(_,mi)=>{
+    const noArr=(KO_ROUNDS.find(r=>r.key===rnd)||{}).no||[];
+    // Järjesta mängud kronoloogiliselt (mängunumbri järgi)
+    const order=Array.from({length:n},(_,mi)=>mi).sort((a,b)=>noArr[a]-noArr[b]);
+    const matches=order.map(mi=>{
       const cur=(act.ko[rnd]&&act.ko[rnd][mi])||'';
-      return`<div class="actual-match"><label>${RND_NAMES[rnd]} #${mi+1} võitja</label>
+      const [tA,tB]=actualKoTeams(rnd,mi,act,actQ,bestThirds);
+      const [lA,lB]=koSideLabels(rnd,mi);
+      const matchup=`<span style="font-size:10px;color:var(--text2);font-weight:400">${tA?flag(tA)+' '+tA:lA} vs ${tB?flag(tB)+' '+tB:lB}</span>`;
+      return`<div class="actual-match"><label>M${noArr[mi]} · ${RND_NAMES[rnd]} võitja<br>${matchup}</label>
         <select onchange="setActualKo('${rnd}',${mi},this.value)" ${dis}>
           <option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${cur===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
@@ -1231,21 +1258,38 @@ async function fetchFromOpenfootball(){
   const matches=(data&&data.matches)||[];
   let n=0;
   matches.forEach(mt=>{
-    if(!mt.group)return;                       // ainult grupimängud
     if(!mt.score||!mt.score.ft)return;         // ainult peetud mängud
     const hN=ofName(mt.team1||''),aN=ofName(mt.team2||'');
     const hS=parseInt(mt.score.ft[0]),aS=parseInt(mt.score.ft[1]);
     if(isNaN(hS)||isNaN(aS))return;
-    const m=lk[`${hN}|${aN}`];                 // sobita meeskonnapaari alusel
-    if(!m)return;
-    let res,hs,as_;
-    if(!m.swap){res=toWTL(hS,aS);hs=hS;as_=aS;}
-    else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';hs=aS;as_=hS;}
-    updateActual(a=>{
-      if(!a.results)a.results={};if(!a.scores)a.scores={};
-      const k=`${m.letter}_${m.mi}`;a.results[k]=res;a.scores[k]={h:hs,a:as_};
-    });
-    n++;
+    if(mt.group){
+      // ── GRUPIMÄNG ──
+      const m=lk[`${hN}|${aN}`];               // sobita meeskonnapaari alusel
+      if(!m)return;
+      let res,hs,as_;
+      if(!m.swap){res=toWTL(hS,aS);hs=hS;as_=aS;}
+      else{const r=toWTL(hS,aS);res=r==='W'?'L':r==='L'?'W':'T';hs=aS;as_=hS;}
+      updateActual(a=>{
+        if(!a.results)a.results={};if(!a.scores)a.scores={};
+        const k=`${m.letter}_${m.mi}`;a.results[k]=res;a.scores[k]={h:hs,a:as_};
+      });
+      n++;
+    } else if(mt.num && KO_NUM[mt.num]){
+      // ── PLAY-OFF MÄNG ── võitja mängunumbri järgi (KO_NUM)
+      // Otsusta võitja: penaltid > lisaaeg > põhiaeg; viik ilma penalteid -> jäta vahele
+      const pick=arr=>{if(!arr||arr.length<2)return null;const a=parseInt(arr[0]),b=parseInt(arr[1]);return a>b?hN:b>a?aN:null;};
+      const sc=mt.score;
+      const win=pick(sc.p)||pick(sc.pen)||pick(sc.ps)||pick(sc.et)||pick(sc.aet)||pick(sc.ft);
+      if(!win||(win!==hN&&win!==aN&&!ALL_TEAMS.includes(win)))return;
+      const {key,index}=KO_NUM[mt.num];
+      updateActual(a=>{
+        if(!a.ko)a.ko={r32:[],r16:[],qf:[],sf:[],tp:null,final:null};
+        if(key==='final')a.ko.final=win;
+        else if(key==='tp')a.ko.tp=win;
+        else{if(!a.ko[key])a.ko[key]=[];a.ko[key][index]=win;}
+      });
+      n++;
+    }
   });
   return n;
 }
@@ -1648,7 +1692,177 @@ function renderSchedule() {
     html += `</div>`;
   });
   document.getElementById('schedule-content').innerHTML =
-    `<h2 style="margin-bottom:16px;font-size:17px">📅 Ajakava <span style="font-size:12px;font-weight:400;color:var(--text2)">— ajad Eesti aja järgi (EEST UTC+3)</span></h2>${html}`;
+    `<h2 style="margin-bottom:16px;font-size:17px">📅 Ajakava <span style="font-size:12px;font-weight:400;color:var(--text2)">— ajad Eesti aja järgi (EEST UTC+3)</span></h2>${html}${koScheduleHtml(act)}`;
+}
+
+// ═══════ PLAY-OFF AJAKAVA ═══════
+const KO_ROUNDS=[
+  {key:'r32',name:'1/16 finaal',dates:'28. juuni – 3. juuli',n:16,no:R32_MATCHNO},
+  {key:'r16',name:'1/8 finaal',dates:'4.–7. juuli',n:8,no:[89,90,93,94,91,92,95,96]},
+  {key:'qf',name:'Veerandfinaal',dates:'9.–11. juuli',n:4,no:[97,98,99,100]},
+  {key:'sf',name:'Poolfinaal',dates:'14.–15. juuli',n:2,no:[101,102]},
+  {key:'tp',name:'3. koha mäng',dates:'18. juuli',n:1,no:[103]},
+  {key:'final',name:'Finaal',dates:'19. juuli · MetLife Stadium, New York/New Jersey',n:1,no:[104]},
+];
+const KO_SHORT={r32:'1/16',r16:'1/8',qf:'VF',sf:'PF',tp:'3.',final:'F'};
+// Ametlik play-off ajakava: mängunumber -> [UTC kuupäev, UTC kellaaeg, linn]
+const KO_SCHED={"73":["2026-06-28","19:00","Los Angeles"],"74":["2026-06-29","20:30","Boston"],"75":["2026-06-30","01:00","Monterrey"],"76":["2026-06-29","17:00","Houston"],"77":["2026-06-30","21:00","New York/New Jersey"],"78":["2026-06-30","17:00","Dallas"],"79":["2026-07-01","01:00","Mexico City"],"80":["2026-07-01","16:00","Atlanta"],"81":["2026-07-02","00:00","San Francisco"],"82":["2026-07-01","20:00","Seattle"],"83":["2026-07-02","23:00","Toronto"],"84":["2026-07-02","19:00","Los Angeles"],"85":["2026-07-03","03:00","Vancouver"],"86":["2026-07-03","22:00","Miami"],"87":["2026-07-04","01:30","Kansas City"],"88":["2026-07-03","18:00","Dallas"],"89":["2026-07-04","21:00","Philadelphia"],"90":["2026-07-04","17:00","Houston"],"91":["2026-07-05","20:00","New York/New Jersey"],"92":["2026-07-06","00:00","Mexico City"],"93":["2026-07-06","19:00","Dallas"],"94":["2026-07-07","00:00","Seattle"],"95":["2026-07-07","16:00","Atlanta"],"96":["2026-07-07","20:00","Vancouver"],"97":["2026-07-09","20:00","Boston"],"98":["2026-07-10","19:00","Los Angeles"],"99":["2026-07-11","21:00","Miami"],"100":["2026-07-12","01:00","Kansas City"],"101":["2026-07-14","19:00","Dallas"],"102":["2026-07-15","19:00","Atlanta"],"103":["2026-07-18","21:00","Miami"],"104":["2026-07-19","19:00","New York/New Jersey"]};
+// Mängunumber -> {key, index} (voor ja koht voorus)
+const KO_NUM={};KO_ROUNDS.forEach(r=>r.no.forEach((num,i)=>{KO_NUM[num]={key:r.key,index:i,roundName:r.name};}));
+function koPickOf(p,koKey,i){if(koKey==='final')return p.ko&&p.ko.final;if(koKey==='tp')return p.ko&&p.ko.tp;return p.ko&&p.ko[koKey]&&p.ko[koKey][i];}
+// Tegelikud grupivõitjad/teised tegelikest tulemustest (ainult kui grupp on lõppenud)
+function getActQ(act){
+  const q={};
+  Object.keys(GROUPS).forEach(g=>{
+    const done=gmOf(g).every((_,mi)=>act.results&&act.results[`${g}_${mi}`]);
+    if(!done)return;
+    const st=calcStandingsFull(g,act);
+    q[`W-${g}`]=st[0]&&st[0].name;q[`R-${g}`]=st[1]&&st[1].name;
+  });
+  return q;
+}
+// 8 parimat tegelikku 3. kohta (kui kõik grupid lõppenud), muidu null
+function actBestThirds(act){
+  const thirds=[];
+  for(const g of Object.keys(GROUPS)){
+    const done=gmOf(g).every((_,mi)=>act.results&&act.results[`${g}_${mi}`]);
+    if(!done)return null;
+    const st=calcStandingsFull(g,act);if(!st[2])return null;thirds.push(st[2]);
+  }
+  thirds.sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf||a.name.localeCompare(b.name));
+  return thirds.slice(0,8).map(t=>t.name);
+}
+function resolveActualSlot(slot,actQ,bestThirds){
+  if(slot.startsWith('W-')||slot.startsWith('R-'))return actQ[slot]||null;
+  if(slot.startsWith('TH-'))return bestThirds?resolveThird(slot.slice(3),bestThirds):null;
+  return null;
+}
+// Tegelikud meeskonnad play-off mängus (gray=null kui pole selgunud)
+function actualKoTeams(roundKey,i,act,actQ,bestThirds){
+  if(roundKey==='r32')return [resolveActualSlot(R32[i][0],actQ,bestThirds),resolveActualSlot(R32[i][1],actQ,bestThirds)];
+  if(roundKey==='final')return [(act.ko.sf||[])[0]||null,(act.ko.sf||[])[1]||null];
+  if(roundKey==='tp'){
+    const qf=act.ko.qf||[],sf=act.ko.sf||[];
+    const lo=(a,b,w)=>!w?null:(w===a?b:a);
+    return [lo(qf[0],qf[1],sf[0]),lo(qf[2],qf[3],sf[1])];
+  }
+  const prev={r16:'r32',qf:'r16',sf:'qf'}[roundKey],pw=act.ko[prev]||[];
+  return [pw[i*2]||null,pw[i*2+1]||null];
+}
+function koWinner(roundKey,i,act){
+  if(roundKey==='final')return act.ko.final||null;
+  if(roundKey==='tp')return act.ko.tp||null;
+  return (act.ko[roundKey]||[])[i]||null;
+}
+// 3. koha vastaste kandidaadigrupid (FIFA ametlik) grupivõitja kaupa
+const TH_CANDIDATES={E:'A/B/C/D/F',I:'C/D/F/G/H',A:'C/E/F/H/I',L:'E/H/I/J/K',D:'B/E/F/I/J',G:'A/E/H/I/J',B:'E/F/G/I/J',K:'D/E/I/J/L'};
+function slotLabel(slot){
+  if(slot.startsWith('W-'))return `${slot.slice(2)}-grupi võitja`;
+  if(slot.startsWith('R-'))return `${slot.slice(2)}-grupi 2. koht`;
+  if(slot.startsWith('TH-'))return `3. koht (${TH_CANDIDATES[slot.slice(3)]||'?'})`;
+  return slot;
+}
+// Kummagi poole kirjeldus, kui meeskond pole veel selgunud
+function koSideLabels(roundKey,i){
+  if(roundKey==='r32')return [slotLabel(R32[i][0]),slotLabel(R32[i][1])];
+  if(roundKey==='final')return ['M101 võitja','M102 võitja'];
+  if(roundKey==='tp')return ['M101 kaotaja','M102 kaotaja'];
+  const feed={r16:R32_MATCHNO,qf:[89,90,93,94,91,92,95,96],sf:[97,98,99,100]}[roundKey];
+  return [`M${feed[i*2]} võitja`,`M${feed[i*2+1]} võitja`];
+}
+function koTeamCell(team,winner,label){
+  if(!team)return `<span class="sched-team" style="color:var(--text2);font-style:italic;opacity:.6">${label||'Määramata'}</span>`;
+  const isW=winner&&winner===team;
+  return `<span class="sched-team" style="${isW?'color:var(--gold);font-weight:700':''}">${isW?'🏆 ':''}${flag(team)} ${team}</span>`;
+}
+function koScheduleHtml(act){
+  const actQ=getActQ(act),bestThirds=actBestThirds(act),myP=myPreds(),now=new Date();
+  // Ehita kõigi play-off mängude nimekiri koos toimumisajaga
+  const list=[];
+  KO_ROUNDS.forEach(rnd=>{
+    for(let i=0;i<rnd.n;i++){
+      const num=rnd.no[i],sc=KO_SCHED[num];
+      if(!sc)continue;
+      const [dateUTC,timeUTC,venue]=sc;
+      const matchUtc=new Date(`${dateUTC}T${timeUTC}:00Z`).getTime();
+      list.push({num,key:rnd.key,index:i,dateUTC,timeUTC,venue,matchUtc});
+    }
+  });
+  list.sort((a,b)=>a.matchUtc-b.matchUtc);
+  // Grupeeri Eesti kuupäeva järgi
+  const byDay={};
+  list.forEach(m=>{const d=toEeDate(m.dateUTC,m.timeUTC);(byDay[d]=byDay[d]||[]).push(m);});
+  const todayStr=new Date(now.getTime()+3*3600000).toISOString().slice(0,10);
+  let html=`<div style="margin-top:24px;border-top:2px solid var(--border);padding-top:14px">
+    <h2 style="margin-bottom:4px;font-size:17px">🏆 Play-off</h2>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:14px">Mängud toimumise aja järjekorras. Selgumata meeskonnad on hallid. 👥 näitab ennustajate hääli; ÕIGE/VALE näitab sinu ennustust.</p>`;
+  Object.keys(byDay).sort().forEach(dateStr=>{
+    const isToday=dateStr===todayStr;
+    const ms=byDay[dateStr];
+    html+=`<div class="sched-day"><div class="sched-day-hdr">${isToday?'📍 ':''}${formatEeDate(dateStr)}<span>${ms.length} mängu</span>${isToday?'<span style="background:#1a3a1a;border-color:var(--green);color:var(--green3)">Täna</span>':''}</div>`;
+    ms.forEach(m=>{
+      const [tA,tB]=actualKoTeams(m.key,m.index,act,actQ,bestThirds);
+      const [lA,lB]=koSideLabels(m.key,m.index);
+      const w=koWinner(m.key,m.index,act);
+      const eeTime=toEeTime(m.dateUTC,m.timeUTC);
+      const isLive=now.getTime()>m.matchUtc&&now.getTime()<m.matchUtc+130*60000&&!w;
+      const scoreMid=w?`<div class="sched-score has-score" style="min-width:30px" title="Edasi pääses ${w}">✓</div>`:isLive?`<div class="sched-score live-s" style="min-width:30px">LIVE</div>`:`<div class="sched-score" style="min-width:30px">vs</div>`;
+      // ÕIGE/VALE sisseloginud mängija ennustusele
+      let verdict='';
+      if(w){const pick=koPickOf(myP,m.key,m.index);if(pick){const okp=pick===w;verdict=`<span class="sched-verdict ${okp?'ok':'no'}">${okp?'ÕIGE':'VALE'}</span>`;}}
+      html+=`<div class="sched-match ${w?'finished':isLive?'live':''}" title="M${m.num} · ${KO_NUM[m.num].roundName} · ${m.venue}">
+        <div class="sched-grp">${KO_SHORT[m.key]}</div>
+        <div class="sched-time ${isLive?'live-t':''}">${eeTime}</div>
+        <div class="sched-teams">
+          ${koTeamCell(tA,w,lA)}
+          ${scoreMid}
+          ${koTeamCell(tB,w,lB)}
+        </div>
+        ${verdict}
+        <button class="sched-pred-btn" onclick="showKoMatchPredictions('${m.key}',${m.index})" title="Vaata ennustusi">👥</button>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  return html+`</div>`;
+}
+// Play-off mängu ennustused: kes pakkus kumba meeskonda võitjaks
+function showKoMatchPredictions(roundKey,i){
+  const s=getAll();
+  const rnd=KO_ROUNDS.find(r=>r.key===roundKey);
+  const pickOf=p=>{if(roundKey==='final')return p.ko&&p.ko.final;if(roundKey==='tp')return p.ko&&p.ko.tp;return p.ko&&p.ko[roundKey]&&p.ko[roundKey][i];};
+  const groups={};let none=[];
+  s.players.forEach(name=>{
+    const p=s.preds[name]||freshPreds();
+    const t=pickOf(p);
+    if(!t){none.push(name);return;}
+    (groups[t]=groups[t]||[]).push(name);
+  });
+  const act=getActual();const aw=koWinner(roundKey,i,act);
+  const teams=Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length);
+  let body='';
+  if(!teams.length){body=`<p style="color:var(--text2);font-style:italic;padding:8px">Keegi pole veel seda mängu ennustanud.</p>`;}
+  else{
+    body=teams.map(t=>{
+      const ok=aw&&aw===t;
+      const names=groups[t].map(n=>n===me?`<strong style="color:var(--green3)">${n} (mina)</strong>`:n).join(', ');
+      return `<div style="background:${ok?'var(--green4)':'var(--bg3)'};border:1px solid ${ok?'var(--green)':'var(--border)'};border-radius:6px;padding:8px 12px;margin-bottom:8px">
+        <div style="font-weight:600;color:${ok?'var(--green3)':'var(--text)'};margin-bottom:3px">${ok?'🏆 ':''}${flag(t)} ${t} <span style="font-size:11px;color:var(--text2);font-weight:400">— ${groups[t].length} häält</span></div>
+        <div style="font-size:12px;color:var(--text2)">${names}</div>
+      </div>`;
+    }).join('');
+  }
+  if(none.length)body+=`<div style="font-size:12px;color:var(--text2);font-style:italic;margin-top:6px">Ennustamata: ${none.join(', ')}</div>`;
+  const awRow=aw?`<div style="background:var(--green4);border:1px solid var(--green);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px">✅ Edasi pääses: <strong style="color:var(--green3)">${flag(aw)} ${aw}</strong></div>`:'';
+  document.getElementById('modal-title').textContent=`${rnd.name} · mäng M${rnd.no[i]}`;
+  document.getElementById('modal-body').innerHTML=awRow+body;
+  document.getElementById('modal-bg').classList.add('open');
+}
+// Bracketi struktuuri muutus: eemalda mängijate kehtetuks jäänud play-off valikud
+function migrateBracket(){
+  const s=getAll();let ch=false;
+  (s.players||[]).forEach(n=>{if(s.preds[n]&&pruneInvalidKo(s.preds[n]))ch=true;});
+  if(ch)saveAll(s);
 }
 // ═══════ HEADER FETCH BUTTON ═══════
 function updateFetchBtn() {
@@ -1665,6 +1879,12 @@ function updateFetchBtn() {
       const key = `${grp}_${mi}`;
       if (!act.results || !act.results[key]) hasPending = true;
     }
+  });
+  // Play-off mängud (KO_SCHED) — kui mäng on lõppenud, aga võitja puudub
+  Object.keys(KO_SCHED).forEach(num=>{
+    const [d,t]=KO_SCHED[num];
+    const end=new Date(`${d}T${t}:00Z`).getTime()+130*60000;
+    if(now.getTime()>end){const inf=KO_NUM[num];if(inf&&!koWinner(inf.key,inf.index,act))hasPending=true;}
   });
   if (hasPending) {
     btn.className = 'btn btn-sm btn-fetch-on';
@@ -1684,14 +1904,26 @@ async function headerFetchResults() {
   btn.textContent = '⏳ Laen...';
   btn.className = 'btn btn-sm btn-s';
   const updated = await fetchFromOpenfootball();
+  // Mitu juba toimunud grupimängu on veel ilma tulemuseta (allikas pole avaldanud)?
+  const now=new Date(),act=getActual();let missing=0;
+  SCHEDULE.forEach(([grp,mi,dateUTC,timeUTC])=>{
+    const end=new Date(`${dateUTC}T${timeUTC}:00Z`).getTime()+110*60000;
+    if(now.getTime()>end&&!(act.results&&act.results[`${grp}_${mi}`]))missing++;
+  });
+  Object.keys(KO_SCHED).forEach(num=>{
+    const [d,t]=KO_SCHED[num];const end=new Date(`${d}T${t}:00Z`).getTime()+130*60000;
+    if(now.getTime()>end){const inf=KO_NUM[num];if(inf&&!koWinner(inf.key,inf.index,act))missing++;}
+  });
   if (updated > 0) {
-    btn.textContent = `✓ ${updated} uuendatud`;
+    btn.textContent = missing>0?`✓ ${updated} laaditud · ${missing} allikas puudu`:`✓ ${updated} uuendatud`;
     btn.className = 'btn btn-sm btn-s';
-    setTimeout(()=>{ updateFetchBtn(); renderGroups(); if(document.getElementById('tab-schedule').classList.contains('active')) renderSchedule(); }, 1500);
+    if(missing>0)btn.title='Openfootball pole veel kõiki tulemusi avaldanud. Puuduvad saad sisestada käsitsi Tulemuste lehel.';
+    setTimeout(()=>{ updateFetchBtn(); renderGroups(); if(document.getElementById('tab-schedule').classList.contains('active')) renderSchedule(); }, 1800);
   } else if (updated === 0) {
-    btn.textContent = '— Ei leitud';
+    btn.textContent = missing>0?`allikas puudu ${missing} mängu — sisesta käsitsi`:'— Ei leitud';
     btn.className = 'btn btn-sm btn-s';
-    setTimeout(updateFetchBtn, 2000);
+    if(missing>0)btn.title='Openfootball pole neid tulemusi veel avaldanud. Sisesta puuduvad käsitsi Tulemuste lehel (skoorikastid).';
+    setTimeout(updateFetchBtn, 2500);
   } else {
     btn.textContent = '❌ Ühendus ebaõnnestus';
     btn.className = 'btn btn-sm btn-s';
@@ -1736,9 +1968,10 @@ async function loadFromGitHub(){
 // ═══════ INIT ═══════
 initTheme();
 updateAdminSections();
+migrateBracket(); // ametlik FIFA bracket: puhasta vana skeemi järgsed kehtetud play-off valikud
 renderLogin();
 // Proovi GitHubist värsket seisu laadida (ei blokeeri kuva)
-loadFromGitHub().then(updated=>{if(updated)renderLogin();}).catch(()=>{});
+loadFromGitHub().then(updated=>{if(updated){migrateBracket();renderLogin();}}).catch(()=>{});
 </script>
 </body>
 </html>
