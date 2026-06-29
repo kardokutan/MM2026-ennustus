@@ -522,12 +522,19 @@ function updateMe(fn){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();
 function updateActual(fn){const s=getAll();if(!s.actual)s.actual=freshActual();fn(s.actual);saveAll(s);}
 
 // ═══════ SCORING ═══════
+function koSet(arr){return new Set((arr||[]).filter(Boolean));}
 function calcScore(p){
   const act=getActual();
   let grp=0,r32s=0,r16s=0,qfs=0,sfs=0,fin=0;
   Object.keys(GROUPS).forEach(g=>{GM.forEach((_,mi)=>{const k=`${g}_${mi}`;if(act.results[k]&&p.results&&p.results[k]===act.results[k])grp++;});});
   const rounds={r32:0,r16:0,qf:0,sf:0};
-  ['r32','r16','qf','sf'].forEach(rnd=>{const aw=act.ko[rnd]||[],pw=p.ko?.[rnd]||[];aw.forEach((w,i)=>{if(w&&pw[i]===w)rounds[rnd]+=RND_PTS[rnd];});});
+  // 1/16, 1/8, 1/4, 1/2: HULGAPÕHINE — iga ennustatud vooru võitja, kes ka tegelikult
+  // selle vooru oma mängu võitis (= jõudis tegelike võitjate hulka), annab punkte,
+  // sõltumata bracketi asukohast.
+  ['r32','r16','qf','sf'].forEach(rnd=>{
+    const aSet=koSet(act.ko[rnd]);
+    koSet(p.ko?.[rnd]).forEach(t=>{if(aSet.has(t))rounds[rnd]+=RND_PTS[rnd];});
+  });
   if(act.ko.final&&p.ko?.final===act.ko.final)fin=RND_PTS.final;
   return{total:grp+rounds.r32+rounds.r16+rounds.qf+rounds.sf+fin,grp,r32:rounds.r32,r16:rounds.r16,qf:rounds.qf,sf:rounds.sf,fin};
 }
@@ -747,8 +754,8 @@ function setResult(letter,mi,val){
       const top2=new Set(Object.keys(GROUPS).flatMap(g=>{const st=calcStandings(g,p);return[st[0]?.name,st[1]?.name].filter(Boolean);}));
       p.thirds=p.thirds.filter(t=>!top2.has(t));
     }
-    // Eemalda ainult need play-off valikud, mis enam ei kehti — ülejäänud säilivad
-    pruneInvalidKo(p);
+    // Paiguta play-off valikud ümber (säilitab kõik veel bracketis olevad meeskonnad)
+    remapPicks(p);
   });
   renderGroups();renderThirdPlace();renderKnockout();updateProgress();
 }
@@ -778,7 +785,7 @@ function renderThirdPlace(){
 function toggleThird(team){
   if(locked||(isViewerMode()&&!isAdmin()))return;
   updateMe(p=>{if(!p.thirds)p.thirds=[];const i=p.thirds.indexOf(team);
-    if(i>=0){p.thirds.splice(i,1);pruneInvalidKo(p);}else if(p.thirds.length<8)p.thirds.push(team);});
+    if(i>=0){p.thirds.splice(i,1);remapPicks(p);}else if(p.thirds.length<8)p.thirds.push(team);});
   renderThirdPlace();renderKnockout();updateProgress();
 }
 function r32Pairs(p){return R32.map(([a,b])=>[resolveSlot(a,p),resolveSlot(b,p)]);}
@@ -786,6 +793,7 @@ function nextPairs(rnd,p){const prev={r16:'r32',qf:'r16',sf:'qf'}[rnd],pw=p.ko[p
   return Array.from({length:n},(_,i)=>[pw[i*2]||null,pw[i*2+1]||null]);}
 function renderKoRound(round){
   const p=myPreds(),act=getActual(),winners=p.ko[round]||[],actW=act.ko[round]||[];
+  const aSet=koSet(act.ko[round]),rsize={r32:16,r16:8,qf:4,sf:2}[round]; // hulgapõhise hindamise jaoks
   const pairs=round==='r32'?r32Pairs(p):nextPairs(round,p),pts=RND_PTS[round];
   const prevDone=round==='r32'?(p.thirds||[]).length>=8
     :((p.ko[{r16:'r32',qf:'r16',sf:'qf'}[round]]||[]).filter(Boolean).length==={r16:16,qf:8,sf:4}[round]);
@@ -793,7 +801,9 @@ function renderKoRound(round){
   const cards=pairs.map(([tA,tB],mi)=>{
     const w=winners[mi]||null,aw=actW[mi]||null;
     const aW=w&&w===tA&&!isSlot(tA),bW=w&&w===tB&&!isSlot(tB);
-    const correct=aw&&w===aw,hasResult=!!aw;
+    // Õige kui ennustatud meeskond jõudis selle vooru tegelike võitjate hulka (asukoht pole oluline)
+    const correct=!!(w&&aSet.has(w));
+    const hasResult=!!w&&(correct||aSet.size>=rsize);
     const ptsBadge=hasResult?`<span class="pts-badge ${correct?'pts-ok':'pts-none'}">${correct?'+'+pts+'p':'0p'}</span>`:'';
     const clkA=(!locked&&!isViewerMode()&&tA&&!isSlot(tA))?`onclick="pickKo('${round}',${mi},'${esc(tA)}')"`:'' ;
     const clkB=(!locked&&!isViewerMode()&&tB&&!isSlot(tB))?`onclick="pickKo('${round}',${mi},'${esc(tB)}')"`:'' ;
@@ -834,11 +844,38 @@ function pruneInvalidKo(p){
       if(w&&w!==a&&w!==b){p.ko[rnd][i]=null;changed=true;}
     }
   });
-  // Finaal: peab olema üks kahest poolfinaali võitjast
+  // Finaal: säilita maailmameistri valik, KUNI mõlemad poolfinaalid on täidetud ja
+  // valik nendega vastuolus. Nii ei kao champion-ennustus poolikute play-off valikute tõttu.
   const sf=p.ko.sf||[];
-  if(p.ko.final&&p.ko.final!==sf[0]&&p.ko.final!==sf[1]){p.ko.final=null;changed=true;}
+  if(p.ko.final&&sf[0]&&sf[1]&&p.ko.final!==sf[0]&&p.ko.final!==sf[1]){p.ko.final=null;changed=true;}
   // 3. koha mäng: peab olema üks kahest poolfinaali kaotajast (lahendatakse finalistide järgi)
   // Lihtsuse mõttes jäta tp alles kui mõlemad poolfinaalid täidetud; muidu nulli kui kehtetu
+  return changed;
+}
+// Paiguta play-off valikud praeguse bracketi järgi õigetesse slottidesse MEESKONNA alusel.
+// Erinevalt pruneInvalidKo-st EI kustuta valikuid asukoha pärast — säilitab kõik meeskonnad,
+// kes on veel bracketis. Nii ei kao ennustused, kui bracketi paarid muutuvad (nt ametlik skeem).
+function remapPicks(p){
+  if(!p||!p.ko)return false;
+  let changed=false;
+  const act=getActual();
+  const fix=(rnd,pairs)=>{
+    if(!p.ko[rnd])p.ko[rnd]=[];
+    const picked=koSet(p.ko[rnd]),aSet=koSet(act.ko[rnd]);
+    const arr=pairs.map(([a,b])=>{
+      const pa=a&&!isSlot(a)&&picked.has(a),pb=b&&!isSlot(b)&&picked.has(b);
+      if(pa&&pb)return aSet.has(a)?a:(aSet.has(b)?b:a); // mõlemad valitud → eelista tegelikku edasipääsejat
+      return pa?a:(pb?b:null);
+    });
+    if(JSON.stringify(arr)!==JSON.stringify(p.ko[rnd])){p.ko[rnd]=arr;changed=true;}
+  };
+  fix('r32',r32Pairs(p));
+  fix('r16',nextPairs('r16',p));
+  fix('qf',nextPairs('qf',p));
+  fix('sf',nextPairs('sf',p));
+  // Finaal: nulli vaid kui mõlemad poolfinaalid täidetud ja meister pole kummagi seas
+  const sf=p.ko.sf||[];
+  if(p.ko.final&&sf[0]&&sf[1]&&!sf.includes(p.ko.final)){p.ko.final=null;changed=true;}
   return changed;
 }
 function clearKoDownstream(p,round,mi){
@@ -1312,11 +1349,13 @@ function viewPlayer(name){
     </div>`).join('')}
   </div>`;
   const koRnds=['r32','r16','qf','sf'].map(rnd=>{
-    const ws=(p.ko?.[rnd]||[]).filter(Boolean),aw=act.ko[rnd]||[];if(!ws.length)return'';
+    const ws=(p.ko?.[rnd]||[]).filter(Boolean);if(!ws.length)return'';
+    const aSet=koSet(act.ko[rnd]),sz={r32:16,r16:8,qf:4,sf:2}[rnd];
     return`<div style="margin-bottom:10px">
       <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${RND_NAMES[rnd]} (+${RND_PTS[rnd]}p)</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${ws.map((t,i)=>{const ok=aw[i]&&aw[i]===t;
-        return`<span style="background:${ok?'var(--green4)':'var(--bg3)'};border:1px solid ${ok?'var(--green)':'var(--border)'};border-radius:4px;padding:2px 8px;font-size:12px;color:${ok?'var(--green3)':'var(--text)'}">${ok?'✓ ':aw[i]?'✗ ':''}${flag(t)} ${t}</span>`;
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${ws.map(t=>{
+        const ok=aSet.has(t),decided=ok||aSet.size>=sz;
+        return`<span style="background:${ok?'var(--green4)':'var(--bg3)'};border:1px solid ${ok?'var(--green)':'var(--border)'};border-radius:4px;padding:2px 8px;font-size:12px;color:${ok?'var(--green3)':'var(--text)'}">${ok?'✓ ':decided?'✗ ':''}${flag(t)} ${t}</span>`;
       }).join('')}</div></div>`;
   }).join('');
   const gcards=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">${Object.entries(GROUPS).map(([l,t])=>groupCard(l,t,p,true,act)).join('')}</div>`;
@@ -1808,8 +1847,17 @@ function koScheduleHtml(act){
       const isLive=now.getTime()>m.matchUtc&&now.getTime()<m.matchUtc+130*60000&&!w;
       const scoreMid=w?`<div class="sched-score has-score" style="min-width:30px" title="Edasi pääses ${w}">✓</div>`:isLive?`<div class="sched-score live-s" style="min-width:30px">LIVE</div>`:`<div class="sched-score" style="min-width:30px">vs</div>`;
       // ÕIGE/VALE sisseloginud mängija ennustusele
+      // 1/16…1/2: ÕIGE kui võitnud meeskond on sinu selle vooru võitjate hulgas (asukoht pole oluline)
       let verdict='';
-      if(w){const pick=koPickOf(myP,m.key,m.index);if(pick){const okp=pick===w;verdict=`<span class="sched-verdict ${okp?'ok':'no'}">${okp?'ÕIGE':'VALE'}</span>`;}}
+      if(w){
+        if(m.key==='r32'||m.key==='r16'||m.key==='qf'||m.key==='sf'){
+          const myset=koSet(myP.ko&&myP.ko[m.key]);
+          if(myset.size>0){const okp=myset.has(w);verdict=`<span class="sched-verdict ${okp?'ok':'no'}">${okp?'ÕIGE':'VALE'}</span>`;}
+        }else{
+          const pick=koPickOf(myP,m.key,m.index);
+          if(pick){const okp=pick===w;verdict=`<span class="sched-verdict ${okp?'ok':'no'}">${okp?'ÕIGE':'VALE'}</span>`;}
+        }
+      }
       html+=`<div class="sched-match ${w?'finished':isLive?'live':''}" title="M${m.num} · ${KO_NUM[m.num].roundName} · ${m.venue}">
         <div class="sched-grp">${KO_SHORT[m.key]}</div>
         <div class="sched-time ${isLive?'live-t':''}">${eeTime}</div>
@@ -1858,10 +1906,10 @@ function showKoMatchPredictions(roundKey,i){
   document.getElementById('modal-body').innerHTML=awRow+body;
   document.getElementById('modal-bg').classList.add('open');
 }
-// Bracketi struktuuri muutus: eemalda mängijate kehtetuks jäänud play-off valikud
+// Bracketi struktuuri muutus: paiguta valikud ümber (EI kustuta), et ennustused säiliksid
 function migrateBracket(){
   const s=getAll();let ch=false;
-  (s.players||[]).forEach(n=>{if(s.preds[n]&&pruneInvalidKo(s.preds[n]))ch=true;});
+  (s.players||[]).forEach(n=>{if(s.preds[n]&&remapPicks(s.preds[n]))ch=true;});
   if(ch)saveAll(s);
 }
 // ═══════ HEADER FETCH BUTTON ═══════
