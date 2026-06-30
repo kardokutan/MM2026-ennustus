@@ -958,22 +958,35 @@ function renderScore(){
 function renderStreakTable(s){
   const act=getActual();
   if(!hasAnyActual()||!s.players.length)return'';
-  // Grupimängud kronoloogilises järjekorras, millel on tegelik tulemus
-  const ordered=SCHEDULE
-    .map(([grp,mi,d,t])=>({key:`${grp}_${mi}`,time:new Date(`${d}T${t}:00Z`).getTime()}))
-    .filter(o=>act.results&&act.results[o.key])
-    .sort((a,b)=>a.time-b.time);
+  // KÕIK mängud kronoloogilises järjekorras, millel on tulemus (grupp + play-off)
+  const ordered=[];
+  SCHEDULE.forEach(([grp,mi,d,t])=>{
+    const key=`${grp}_${mi}`;
+    if(act.results&&act.results[key])ordered.push({type:'g',key,time:new Date(`${d}T${t}:00Z`).getTime()});
+  });
+  KO_ROUNDS.forEach(rnd=>{
+    for(let i=0;i<rnd.n;i++){
+      const sc=KO_SCHED[rnd.no[i]];if(!sc)continue;
+      const w=koWinner(rnd.key,i,act);
+      if(w)ordered.push({type:'k',round:rnd.key,w,time:new Date(`${sc[0]}T${sc[1]}:00Z`).getTime()});
+    }
+  });
+  ordered.sort((a,b)=>a.time-b.time);
   if(!ordered.length)return'';
+  // Kas mängija ennustas selle mängu õigesti? (puudub või vale → katkeb)
+  const isCorrect=(p,o)=>{
+    if(o.type==='g')return !!(p.results&&p.results[o.key]&&p.results[o.key]===act.results[o.key]);
+    if(o.round==='final')return !!(p.ko&&p.ko.final===o.w);
+    if(o.round==='tp')return !!(p.ko&&p.ko.tp===o.w);
+    return koSet(p.ko&&p.ko[o.round]).has(o.w); // 1/16…1/2: kas võitnud meeskond on mängija valikute hulgas
+  };
   const rows=s.players.map(n=>{
-    const pr=(s.preds[n]||freshPreds()).results||{};
+    const p=s.preds[n]||freshPreds();
     let best=0,cur=0;
-    ordered.forEach(({key})=>{
-      if(pr[key]&&pr[key]===act.results[key]){cur++;if(cur>best)best=cur;}
-      else cur=0;
-    });
+    ordered.forEach(o=>{if(isCorrect(p,o)){cur++;if(cur>best)best=cur;}else cur=0;});
     // praegune seeria (lõpeb viimase mänguga)
     let curEnd=0;
-    for(let i=ordered.length-1;i>=0;i--){const key=ordered[i].key;if(pr[key]&&pr[key]===act.results[key])curEnd++;else break;}
+    for(let i=ordered.length-1;i>=0;i--){if(isCorrect(p,ordered[i]))curEnd++;else break;}
     return{name:n,best,cur:curEnd};
   }).filter(r=>r.best>0)
     .sort((a,b)=>b.best-a.best||b.cur-a.cur||a.name.localeCompare(b.name))
@@ -994,7 +1007,7 @@ function renderStreakTable(s){
   }).join('');
   return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:20px">
     <h3 style="font-size:15px;margin-bottom:6px">🔥 Pikim õigete seeria (streak)</h3>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Mängude toimumise järjekorras järjest õigesti ennustatud grupimängude tulemused. 🔥 = seeria kestab praegu.</p>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Mängude toimumise järjekorras järjest õigesti ennustatud mängud (grupp + play-off). Play-offis on õige, kui edasipääsenu on su valikute hulgas. Puuduv või vale vastus katkestab seeria. 🔥 = seeria kestab praegu.</p>
     ${list}
   </div>`;
 }
