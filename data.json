@@ -3080,14 +3080,16 @@
     "ko": {
       "r32": [
         "Paraguay",
-        null,
+        "Prantsusmaa",
         "Kanada",
         "Maroko",
         null,
         null,
         null,
         null,
-        "Brasiilia"
+        "Brasiilia",
+        "Norra",
+        "Mehhiko"
       ],
       "r16": [],
       "qf": [],
@@ -3096,5 +3098,5 @@
       "final": null
     }
   },
-  "exported": "2026-06-30T11:06:23.405Z"
+  "exported": "2026-07-01T07:34:47.727Z"
 }
