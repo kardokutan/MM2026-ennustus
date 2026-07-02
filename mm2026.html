@@ -2042,6 +2042,12 @@ function updateFetchBtn() {
     btn.textContent = '⬇ Laadi tulemused';
     btn.disabled = false;
     btn.title = 'Lõppenud mängude tulemused pole veel laaditud!';
+  } else if (isAdmin()) {
+    // Admin saab alati kõik openfootballist üle laadida (nt skoorid/penaltid, mis on juba olemas)
+    btn.className = 'btn btn-sm btn-fetch-on';
+    btn.textContent = '⟳ Lae tulemused uuesti';
+    btn.disabled = false;
+    btn.title = 'Kõik tulemused on olemas, aga admin saab need openfootballist üle laadida (skoorid + penaltid). Mängijate ennustusi see EI muuda.';
   } else {
     btn.className = 'btn btn-sm btn-fetch-off';
     btn.textContent = '✓ Tulemused ajakohased';
