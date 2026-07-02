@@ -516,7 +516,7 @@ function getAll(){
 function saveAll(s){localStorage.setItem('wc2026',JSON.stringify(s));}
 function myPreds(){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();return s.preds[me];}
 function freshPreds(){return{results:{},thirds:[],ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
-function freshActual(){return{results:{},scores:{},ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null}};}
+function freshActual(){return{results:{},scores:{},ko:{r32:[],r16:[],qf:[],sf:[],tp:null,final:null,scores:{}}};}
 function getActual(){const s=getAll();if(!s.actual)s.actual=freshActual();return s.actual;}
 function updateMe(fn){const s=getAll();if(!s.preds[me])s.preds[me]=freshPreds();fn(s.preds[me]);saveAll(s);}
 function updateActual(fn){const s=getAll();if(!s.actual)s.actual=freshActual();fn(s.actual);saveAll(s);}
@@ -1226,12 +1226,14 @@ function renderActualKo(act,admin){
       const cur=(act.ko[rnd]&&act.ko[rnd][mi])||'';
       const [tA,tB]=actualKoTeams(rnd,mi,act,actQ,bestThirds);
       const [lA,lB]=koSideLabels(rnd,mi);
+      const num=noArr[mi];
       const matchup=`<span style="font-size:10px;color:var(--text2);font-weight:400">${tA?flag(tA)+' '+tA:lA} vs ${tB?flag(tB)+' '+tB:lB}</span>`;
-      return`<div class="actual-match"><label>M${noArr[mi]} · ${RND_NAMES[rnd]} võitja<br>${matchup}</label>
+      return`<div class="actual-match"><label>M${num} · ${RND_NAMES[rnd]} võitja<br>${matchup}</label>
         <select onchange="setActualKo('${rnd}',${mi},this.value)" ${dis}>
           <option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${cur===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
-        </select></div>`;
+        </select>
+        ${koScoreInputs(act,num,admin)}</div>`;
     }).join('');
     return`<div class="results-section"><h3>${RND_NAMES[rnd]} võitjad <span class="rtag">+${RND_PTS[rnd]}p</span></h3>
       <div class="actual-ko-grid">${matches}</div></div>`;
@@ -1242,17 +1244,48 @@ function renderActualKo(act,admin){
       <div class="actual-match"><label>🏆 Finaali võitja (maailmameister)</label>
         <select onchange="setActualKoFinal(this.value)" ${dis}><option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${f===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
-        </select></div>
+        </select>
+        ${koScoreInputs(act,104,admin)}</div>
       <div class="actual-match"><label>🥉 3. koha mängu võitja</label>
         <select onchange="setActualKoTp(this.value)" ${dis}><option value="">– vali –</option>
           ${ALL_TEAMS.map(t=>`<option value="${esc(t)}" ${tp3===t?'selected':''}>${flag(t)} ${t}</option>`).join('')}
-        </select></div>
+        </select>
+        ${koScoreInputs(act,103,admin)}</div>
     </div></div>`;
   return koHtml+finalHtml;
+}
+// Play-off mängu skoori sisestus (mängunumbri järgi). Skoor on informatiivne — edasipääseja määrab endiselt valik ülal.
+function koScoreInputs(act,num,admin){
+  const sc=(act.ko&&act.ko.scores&&act.ko.scores[num])||{};
+  const inp=(field,val)=>admin
+    ?`<input type="number" min="0" max="99" value="${val??''}" placeholder="-"
+        onchange="setActualKoScore(${num},'${field}',this.value)"
+        style="width:32px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:700;text-align:center;padding:2px 0;outline:none">`
+    :`<span style="width:32px;display:inline-block;text-align:center;font-size:13px;font-weight:700;color:var(--text)">${val??'–'}</span>`;
+  const scoreLine=`<div style="display:flex;align-items:center;gap:3px;margin-top:5px">
+    <span style="font-size:10px;color:var(--text2)">Skoor:</span>
+    ${inp('h',sc.h)}<span style="color:var(--text2);font-size:11px">:</span>${inp('a',sc.a)}
+  </div>`;
+  // Penaltiseeria skoor (valikuline — täida ainult kui mäng läks penaltitele)
+  const showPen=admin||sc.ph!=null||sc.pa!=null;
+  const penLine=showPen?`<div style="display:flex;align-items:center;gap:3px;margin-top:3px">
+    <span style="font-size:10px;color:var(--text2)">Pen:</span>
+    ${inp('ph',sc.ph)}<span style="color:var(--text2);font-size:11px">:</span>${inp('pa',sc.pa)}
+  </div>`:'';
+  return scoreLine+penLine;
 }
 function setActualKo(rnd,mi,val){updateActual(a=>{if(!a.ko[rnd])a.ko[rnd]=[];a.ko[rnd][mi]=val||null;});renderResults();}
 function setActualKoFinal(val){updateActual(a=>{a.ko.final=val||null;});renderResults();renderFinal();}
 function setActualKoTp(val){updateActual(a=>{a.ko.tp=val||null;});renderResults();renderFinal();}
+function setActualKoScore(num,side,val){
+  updateActual(a=>{
+    if(!a.ko.scores)a.ko.scores={};
+    if(!a.ko.scores[num])a.ko.scores[num]={h:null,a:null};
+    a.ko.scores[num][side]=val===''?null:parseInt(val);
+  });
+  renderResults();updateFetchBtn();
+  if(document.getElementById('tab-schedule')&&document.getElementById('tab-schedule').classList.contains('active'))renderSchedule();
+}
 
 // ═══════ AUTO-FETCH ═══════
 // Build lookup: "EstTeamHome|EstTeamAway" → { letter, mi }
@@ -1328,11 +1361,31 @@ async function fetchFromOpenfootball(){
       const win=pick(sc.p)||pick(sc.pen)||pick(sc.ps)||pick(sc.et)||pick(sc.aet)||pick(sc.ft);
       if(!win||(win!==hN&&win!==aN&&!ALL_TEAMS.includes(win)))return;
       const {key,index}=KO_NUM[mt.num];
+      // Play-off skoor: eelista lisaaja (et/aet) tulemust, muidu põhiaeg (ft). Penaltid ei muuda väravaskoori.
+      const goalArr=sc.et||sc.aet||sc.ft;
+      const gh=goalArr?parseInt(goalArr[0]):null,ga=goalArr?parseInt(goalArr[1]):null;
       updateActual(a=>{
         if(!a.ko)a.ko={r32:[],r16:[],qf:[],sf:[],tp:null,final:null};
         if(key==='final')a.ko.final=win;
         else if(key==='tp')a.ko.tp=win;
         else{if(!a.ko[key])a.ko[key]=[];a.ko[key][index]=win;}
+        // Salvesta skoor ajakava jaoks, orienteeritud ajakava (tA:tB) järjekorda
+        if(gh!=null&&!isNaN(gh)&&ga!=null&&!isNaN(ga)){
+          if(!a.ko.scores)a.ko.scores={};
+          let flip=false;
+          try{
+            const aq=getActQ(a),bt=actBestThirds(a);
+            const [tA,tB]=actualKoTeams(key,index,a,aq,bt);
+            if(tA===aN&&tB===hN)flip=true;
+          }catch(e){}
+          const rec={h:flip?ga:gh,a:flip?gh:ga};
+          const penArr=sc.p||sc.pen||sc.ps; // penaltiseeria, kui oli
+          if(penArr&&penArr.length>=2){
+            const ph=parseInt(penArr[0]),pa=parseInt(penArr[1]);
+            if(!isNaN(ph)&&!isNaN(pa)){rec.ph=flip?pa:ph;rec.pa=flip?ph:pa;}
+          }
+          a.ko.scores[mt.num]=rec;
+        }
       });
       n++;
     }
@@ -1860,7 +1913,15 @@ function koScheduleHtml(act){
       const w=koWinner(m.key,m.index,act);
       const eeTime=toEeTime(m.dateUTC,m.timeUTC);
       const isLive=now.getTime()>m.matchUtc&&now.getTime()<m.matchUtc+130*60000&&!w;
-      const scoreMid=w?`<div class="sched-score has-score" style="min-width:30px" title="Edasi pääses ${w}">✓</div>`:isLive?`<div class="sched-score live-s" style="min-width:30px">LIVE</div>`:`<div class="sched-score" style="min-width:30px">vs</div>`;
+      const koSc=(act.ko&&act.ko.scores)?act.ko.scores[m.num]:null;
+      const hasKoSc=koSc&&koSc.h!=null&&koSc.a!=null;
+      const hasPen=hasKoSc&&koSc.ph!=null&&koSc.pa!=null;
+      // Penaltiseeria korral: (pen kodu) skoor (pen külaline), nt (4) 1 : 1 (3)
+      const scoreTxt=hasPen?`(${koSc.ph}) ${koSc.h} : ${koSc.a} (${koSc.pa})`:hasKoSc?`${koSc.h} : ${koSc.a}`:'';
+      const scoreMid=hasKoSc
+        ?`<div class="sched-score has-score"${hasPen?' style="min-width:auto;white-space:nowrap"':''} title="${w?'Edasi pääses '+w+(hasPen?' (penaltitega)':''):''}">${scoreTxt}</div>`
+        :w?`<div class="sched-score has-score" style="min-width:30px" title="Edasi pääses ${w}">✓</div>`
+        :isLive?`<div class="sched-score live-s" style="min-width:30px">LIVE</div>`:`<div class="sched-score" style="min-width:30px">vs</div>`;
       // ÕIGE/VALE sisseloginud mängija ennustusele
       // 1/16…1/2: ÕIGE kui võitnud meeskond on sinu selle vooru võitjate hulgas (asukoht pole oluline)
       let verdict='';
@@ -1928,9 +1989,22 @@ function showKoMatchPredictions(roundKey,i){
     body=teams.length?teams.map(t=>{const ok=aw&&aw===t;const names=groups[t].map(n=>n===me?`<strong style="color:var(--green3)">${n} (mina)</strong>`:n).join(', ');return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:8px"><div style="font-weight:600;margin-bottom:3px">${flag(t)} ${t} <span style="font-size:11px;color:var(--text2);font-weight:400">— ${groups[t].length} häält</span></div><div style="font-size:12px;color:var(--text2)">${names}</div></div>`;}).join(''):`<p style="color:var(--text2);font-style:italic;padding:8px">Meeskonnad pole veel selgunud.</p>`;
   }
   const matchTitle=(tA||tB)?`${tA?flag(tA)+' '+tA:'?'} vs ${tB?flag(tB)+' '+tB:'?'}`:`${rnd.name}`;
+  // Tulemus (skoor) — ainult selles play-off modaalis; penaltiseeria korral märgime "penaltitega"
+  const koSc=(act.ko&&act.ko.scores)?act.ko.scores[rnd.no[i]]:null;
+  let scoreRow='';
+  if(koSc&&koSc.h!=null&&koSc.a!=null){
+    const hasPen=(koSc.ph!=null&&koSc.pa!=null);
+    const penDraw=(koSc.h===koSc.a&&!!aw);
+    let penTxt='';
+    if(hasPen)penTxt=` <span style="font-size:12px;color:var(--text2);font-weight:600">(penaltitega ${koSc.ph}:${koSc.pa})</span>`;
+    else if(penDraw)penTxt=` <span style="font-size:12px;color:var(--text2);font-weight:600">(penaltitega)</span>`;
+    scoreRow=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:14px;text-align:center">
+      <span>${tA?flag(tA)+' '+tA:'?'}</span> <strong style="font-size:16px">${koSc.h} : ${koSc.a}</strong> <span>${tB?tB+' '+flag(tB):'?'}</span>${penTxt}
+    </div>`;
+  }
   const awRow=aw?`<div style="background:var(--green4);border:1px solid var(--green);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px">✅ Edasi pääses: <strong style="color:var(--green3)">${flag(aw)} ${aw}</strong></div>`:'';
   document.getElementById('modal-title').textContent=`M${rnd.no[i]} · ${matchTitle}`;
-  document.getElementById('modal-body').innerHTML=awRow+body;
+  document.getElementById('modal-body').innerHTML=scoreRow+awRow+body;
   document.getElementById('modal-bg').classList.add('open');
 }
 // Bracketi struktuuri muutus EI kustuta enam ennustusi: jätame valikud puutumata
