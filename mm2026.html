@@ -2126,9 +2126,16 @@ async function loadFromGitHub(){
 initTheme();
 updateAdminSections();
 migrateBracket(); // ametlik FIFA bracket: puhasta vana skeemi järgsed kehtetud play-off valikud
-renderLogin();
-// Proovi GitHubist värsket seisu laadida (ei blokeeri kuva)
-loadFromGitHub().then(updated=>{if(updated){migrateBracket();renderLogin();}}).catch(()=>{});
+// Admin näeb kohe oma kohalikku seisu. Tavakasutajale laeme enne GitHubist värske seisu,
+// et vältida poolikute/tühjade ennustuste vilkumist enne andmete saabumist.
+if(isAdmin()){
+  renderLogin();
+}else{
+  const _pl=document.getElementById('player-list');
+  if(_pl)_pl.innerHTML='<p style="color:var(--text2);font-size:13px;text-align:center;padding:18px">⏳ Laen ennustusi…</p>';
+}
+// Proovi GitHubist värsket seisu laadida; renderda alles pärast (ei blokeeri kuva)
+loadFromGitHub().then(updated=>{if(updated)migrateBracket();renderLogin();}).catch(()=>{renderLogin();});
 </script>
 </body>
 </html>
