@@ -255,7 +255,7 @@ nav{display:flex;gap:2px;flex:1}
 .modal-body{padding:16px}
 
 @media(max-width:700px){
-  html,body{max-width:100%;overflow-x:hidden}
+  html,body{max-width:100%;overflow-x:clip}
   .tab{padding:10px}
   .groups-grid,.actual-ko-grid{grid-template-columns:1fr}
   /* header: rida1 = logo + hamburger; rida2 = nimi + lukk + Laadi tulemused; nav & Eksport/Vaheta menuusse */
@@ -641,9 +641,9 @@ function login(name){
   if(isViewerMode())document.getElementById('hlock').textContent='👁 Vaaterežiim';
   renderAll();
   updateFetchBtn();
-  // Mobiilis ennustajale: avaleht = Ajakava, kerime viimati toimunud mängu keskele.
+  // Mobiilis (ka adminile): avaleht = Ajakava, kerime viimati toimunud mängu ekraani keskele.
   // NB: see käib enne vaaterežiimi-kontrolli, sest tavamängija on GitHubist laetult vaaterežiimis.
-  if(window.innerWidth<=700&&!isAdmin()){
+  if(window.innerWidth<=700){
     const schedBtn=document.querySelector('.nb[onclick*="schedule"]');
     if(schedBtn){showTab('schedule',schedBtn);scrollToSchedAnchor();}
   }
